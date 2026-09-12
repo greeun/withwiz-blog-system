@@ -1,0 +1,540 @@
+/**
+ * blog-system 슈퍼 어드민 스타일
+ *
+ * CSS 커스텀 프로퍼티를 통한 테마 지원
+ * 모든 클래스는 blog-system-admin- 네임스페이스 사용
+ */
+
+/* ── 커스텀 프로퍼티 ── */
+
+:root {
+  --bsa-color-primary: #2563eb;
+  --bsa-color-primary-hover: #1d4ed8;
+  --bsa-color-danger: #dc2626;
+  --bsa-color-danger-hover: #b91c1c;
+  --bsa-color-success: #16a34a;
+  --bsa-color-warning: #d97706;
+  --bsa-color-bg: #ffffff;
+  --bsa-color-bg-secondary: #f9fafb;
+  --bsa-color-border: #e5e7eb;
+  --bsa-color-text: #111827;
+  --bsa-color-text-secondary: #6b7280;
+  --bsa-color-text-muted: #9ca3af;
+  --bsa-radius: 6px;
+  --bsa-radius-lg: 8px;
+  --bsa-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --bsa-shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --bsa-font-size-sm: 0.875rem;
+  --bsa-font-size-base: 1rem;
+  --bsa-font-size-lg: 1.25rem;
+  --bsa-font-size-xl: 1.5rem;
+  --bsa-spacing-xs: 0.25rem;
+  --bsa-spacing-sm: 0.5rem;
+  --bsa-spacing-md: 1rem;
+  --bsa-spacing-lg: 1.5rem;
+  --bsa-spacing-xl: 2rem;
+}
+
+/* ── 레이아웃 ── */
+
+.blog-system-admin-dashboard,
+.blog-system-admin-tenant-manager,
+.blog-system-admin-user-manager,
+.blog-system-admin-monitor,
+.blog-system-admin-onboarding {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--bsa-spacing-lg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--bsa-color-text);
+}
+
+.blog-system-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--bsa-spacing-lg);
+}
+
+.blog-system-admin-header h2 {
+  margin: 0;
+  font-size: var(--bsa-font-size-xl);
+}
+
+.blog-system-admin-section {
+  margin-top: var(--bsa-spacing-xl);
+}
+
+.blog-system-admin-section h3 {
+  font-size: var(--bsa-font-size-lg);
+  margin-bottom: var(--bsa-spacing-md);
+  padding-bottom: var(--bsa-spacing-sm);
+  border-bottom: 1px solid var(--bsa-color-border);
+}
+
+/* ── 통계 카드 ── */
+
+.blog-system-admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--bsa-spacing-md);
+  margin-bottom: var(--bsa-spacing-lg);
+}
+
+.blog-system-admin-stat-card {
+  background: var(--bsa-color-bg);
+  border: 1px solid var(--bsa-color-border);
+  border-radius: var(--bsa-radius-lg);
+  padding: var(--bsa-spacing-lg);
+  box-shadow: var(--bsa-shadow);
+}
+
+.blog-system-admin-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--bsa-color-primary);
+  line-height: 1;
+}
+
+.blog-system-admin-stat-label {
+  font-size: var(--bsa-font-size-sm);
+  color: var(--bsa-color-text-secondary);
+  margin-top: var(--bsa-spacing-xs);
+}
+
+.blog-system-admin-stat-sub {
+  font-size: var(--bsa-font-size-sm);
+  color: var(--bsa-color-text-muted);
+  margin-top: var(--bsa-spacing-xs);
+}
+
+/* ── 테이블 ── */
+
+.blog-system-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--bsa-color-border);
+  border-radius: var(--bsa-radius);
+  overflow: hidden;
+}
+
+.blog-system-admin-table th,
+.blog-system-admin-table td {
+  padding: var(--bsa-spacing-sm) var(--bsa-spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--bsa-color-border);
+  font-size: var(--bsa-font-size-sm);
+}
+
+.blog-system-admin-table th {
+  background: var(--bsa-color-bg-secondary);
+  font-weight: 600;
+  color: var(--bsa-color-text-secondary);
+  white-space: nowrap;
+}
+
+.blog-system-admin-table tbody tr:hover {
+  background: var(--bsa-color-bg-secondary);
+}
+
+/* ── 버튼 ── */
+
+.blog-system-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--bsa-spacing-sm) var(--bsa-spacing-md);
+  border-radius: var(--bsa-radius);
+  border: 1px solid var(--bsa-color-border);
+  background: var(--bsa-color-bg);
+  color: var(--bsa-color-text);
+  font-size: var(--bsa-font-size-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.blog-system-admin-btn:hover {
+  background: var(--bsa-color-bg-secondary);
+}
+
+.blog-system-admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.blog-system-admin-btn-primary {
+  background: var(--bsa-color-primary);
+  color: #fff;
+  border-color: var(--bsa-color-primary);
+}
+
+.blog-system-admin-btn-primary:hover {
+  background: var(--bsa-color-primary-hover);
+}
+
+.blog-system-admin-btn-secondary {
+  background: var(--bsa-color-bg-secondary);
+  border-color: var(--bsa-color-border);
+}
+
+.blog-system-admin-btn-danger {
+  background: var(--bsa-color-danger);
+  color: #fff;
+  border-color: var(--bsa-color-danger);
+}
+
+.blog-system-admin-btn-danger:hover {
+  background: var(--bsa-color-danger-hover);
+}
+
+.blog-system-admin-btn-small {
+  padding: var(--bsa-spacing-xs) var(--bsa-spacing-sm);
+  font-size: 0.8125rem;
+}
+
+/* ── 폼 ── */
+
+.blog-system-admin-form-group {
+  margin-bottom: var(--bsa-spacing-md);
+}
+
+.blog-system-admin-form-group label {
+  display: block;
+  font-size: var(--bsa-font-size-sm);
+  font-weight: 600;
+  margin-bottom: var(--bsa-spacing-xs);
+  color: var(--bsa-color-text);
+}
+
+.blog-system-admin-form-group small {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--bsa-color-text-muted);
+  margin-top: var(--bsa-spacing-xs);
+}
+
+.blog-system-admin-input {
+  width: 100%;
+  padding: var(--bsa-spacing-sm) var(--bsa-spacing-md);
+  border: 1px solid var(--bsa-color-border);
+  border-radius: var(--bsa-radius);
+  font-size: var(--bsa-font-size-sm);
+  color: var(--bsa-color-text);
+  background: var(--bsa-color-bg);
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.blog-system-admin-input:focus {
+  outline: none;
+  border-color: var(--bsa-color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.blog-system-admin-select {
+  padding: var(--bsa-spacing-sm) var(--bsa-spacing-md);
+  border: 1px solid var(--bsa-color-border);
+  border-radius: var(--bsa-radius);
+  font-size: var(--bsa-font-size-sm);
+  background: var(--bsa-color-bg);
+  color: var(--bsa-color-text);
+}
+
+.blog-system-admin-form-row {
+  display: flex;
+  gap: var(--bsa-spacing-sm);
+  align-items: center;
+  margin-top: var(--bsa-spacing-md);
+}
+
+.blog-system-admin-form-row .blog-system-admin-input {
+  flex: 1;
+}
+
+.blog-system-admin-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bsa-spacing-sm);
+  font-weight: 400 !important;
+  cursor: pointer;
+}
+
+/* ── 뱃지 ── */
+
+.blog-system-admin-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.blog-system-admin-badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.blog-system-admin-badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.blog-system-admin-badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.blog-system-admin-badge-default {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ── 알림 ── */
+
+.blog-system-admin-alert {
+  padding: var(--bsa-spacing-sm) var(--bsa-spacing-md);
+  border-radius: var(--bsa-radius);
+  margin-bottom: var(--bsa-spacing-md);
+  font-size: var(--bsa-font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--bsa-spacing-sm);
+}
+
+.blog-system-admin-alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* ── 도구 모음 ── */
+
+.blog-system-admin-toolbar {
+  display: flex;
+  gap: var(--bsa-spacing-sm);
+  margin-bottom: var(--bsa-spacing-md);
+}
+
+.blog-system-admin-toolbar .blog-system-admin-input {
+  max-width: 320px;
+}
+
+/* ── 액션 그룹 ── */
+
+.blog-system-admin-actions {
+  display: flex;
+  gap: var(--bsa-spacing-sm);
+  align-items: center;
+}
+
+/* ── 상세 그리드 ── */
+
+.blog-system-admin-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--bsa-spacing-md);
+  background: var(--bsa-color-bg-secondary);
+  padding: var(--bsa-spacing-md);
+  border-radius: var(--bsa-radius-lg);
+  border: 1px solid var(--bsa-color-border);
+}
+
+.blog-system-admin-detail-item {
+  font-size: var(--bsa-font-size-sm);
+}
+
+.blog-system-admin-detail-item strong {
+  color: var(--bsa-color-text-secondary);
+  margin-right: var(--bsa-spacing-xs);
+}
+
+/* ── 시스템 상태 ── */
+
+.blog-system-admin-health {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bsa-spacing-sm);
+}
+
+.blog-system-admin-health-item {
+  display: flex;
+  align-items: center;
+  gap: var(--bsa-spacing-sm);
+  font-size: var(--bsa-font-size-sm);
+}
+
+.blog-system-admin-health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.blog-system-admin-health-ok {
+  background: var(--bsa-color-success);
+}
+
+.blog-system-admin-health-warn {
+  background: var(--bsa-color-warning);
+}
+
+.blog-system-admin-health-error {
+  background: var(--bsa-color-danger);
+}
+
+/* ── 프로그레스 바 ── */
+
+.blog-system-admin-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--bsa-color-border);
+  border-radius: 2px;
+  margin-top: var(--bsa-spacing-sm);
+  overflow: hidden;
+}
+
+.blog-system-admin-progress-bar {
+  height: 100%;
+  background: var(--bsa-color-primary);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* ── 로딩 / 빈 상태 ── */
+
+.blog-system-admin-loading {
+  text-align: center;
+  padding: var(--bsa-spacing-xl);
+  color: var(--bsa-color-text-muted);
+  font-size: var(--bsa-font-size-sm);
+}
+
+.blog-system-admin-empty {
+  text-align: center;
+  color: var(--bsa-color-text-muted);
+  font-size: var(--bsa-font-size-sm);
+  padding: var(--bsa-spacing-lg);
+}
+
+.blog-system-admin-meta {
+  font-size: var(--bsa-font-size-sm);
+  color: var(--bsa-color-text-muted);
+}
+
+/* ── 온보딩 스텝 ── */
+
+.blog-system-admin-onboarding-steps {
+  display: flex;
+  gap: var(--bsa-spacing-md);
+  margin-bottom: var(--bsa-spacing-xl);
+  padding-bottom: var(--bsa-spacing-md);
+  border-bottom: 1px solid var(--bsa-color-border);
+}
+
+.blog-system-admin-onboarding-step {
+  display: flex;
+  align-items: center;
+  gap: var(--bsa-spacing-xs);
+  color: var(--bsa-color-text-muted);
+}
+
+.blog-system-admin-onboarding-step.active {
+  color: var(--bsa-color-primary);
+  font-weight: 600;
+}
+
+.blog-system-admin-onboarding-step.completed {
+  color: var(--bsa-color-success);
+}
+
+.blog-system-admin-onboarding-step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 2px solid currentColor;
+}
+
+.blog-system-admin-onboarding-step.active .blog-system-admin-onboarding-step-number {
+  background: var(--bsa-color-primary);
+  color: #fff;
+  border-color: var(--bsa-color-primary);
+}
+
+.blog-system-admin-onboarding-step.completed .blog-system-admin-onboarding-step-number {
+  background: var(--bsa-color-success);
+  color: #fff;
+  border-color: var(--bsa-color-success);
+}
+
+.blog-system-admin-onboarding-step-label {
+  font-size: var(--bsa-font-size-sm);
+}
+
+.blog-system-admin-onboarding-content {
+  max-width: 600px;
+}
+
+.blog-system-admin-onboarding-content h3 {
+  margin-top: 0;
+}
+
+.blog-system-admin-onboarding-actions {
+  display: flex;
+  gap: var(--bsa-spacing-sm);
+  justify-content: flex-end;
+  margin-top: var(--bsa-spacing-lg);
+}
+
+/* ── 카테고리 선택 ── */
+
+.blog-system-admin-category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bsa-spacing-sm);
+}
+
+.blog-system-admin-category-chip {
+  padding: var(--bsa-spacing-xs) var(--bsa-spacing-md);
+  border-radius: 20px;
+  border: 1px solid var(--bsa-color-border);
+  background: var(--bsa-color-bg);
+  cursor: pointer;
+  font-size: var(--bsa-font-size-sm);
+  transition: all 0.15s ease;
+}
+
+.blog-system-admin-category-chip:hover {
+  border-color: var(--bsa-color-primary);
+}
+
+.blog-system-admin-category-chip.selected {
+  background: var(--bsa-color-primary);
+  color: #fff;
+  border-color: var(--bsa-color-primary);
+}
+
+/* ── 요약 ── */
+
+.blog-system-admin-summary {
+  background: var(--bsa-color-bg-secondary);
+  border: 1px solid var(--bsa-color-border);
+  border-radius: var(--bsa-radius-lg);
+  padding: var(--bsa-spacing-md);
+}
+
+.blog-system-admin-summary-item {
+  padding: var(--bsa-spacing-xs) 0;
+  font-size: var(--bsa-font-size-sm);
+}
+
+.blog-system-admin-summary-item + .blog-system-admin-summary-item {
+  border-top: 1px solid var(--bsa-color-border);
+}

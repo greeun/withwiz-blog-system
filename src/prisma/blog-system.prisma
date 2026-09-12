@@ -1,0 +1,90 @@
+// 블로그 시스템 참조 스키마
+// 실제 마이그레이션에 사용되지 않음 — 호스트 프로젝트의 schema.prisma에 통합하여 사용
+// @see spec 섹션 8
+
+model Tenant {
+  id            String       @id @default(cuid())
+  name          String
+  slug          String       @unique
+  customDomain  String?      @unique
+  logo          String?
+  settings      Json         @default("{}")
+  planId        String?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  users         TenantUser[]
+  plan          Plan?        @relation(fields: [planId], references: [id])
+  @@map("tenants")
+}
+
+model TenantUser {
+  id        String     @id @default(cuid())
+  userId    String
+  tenantId  String
+  role      TenantRole @default(VIEWER)
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id])
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  @@unique([userId, tenantId])
+  @@map("tenant_users")
+}
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum SystemRole {
+  USER
+  SUPER_ADMIN
+}
+
+model Plan {
+  id              String   @id @default(cuid())
+  name            String
+  maxPosts        Int      @default(100)
+  maxStorage      BigInt   @default(1073741824)
+  maxUsers        Int      @default(5)
+  priceMonthly    Int      @default(0)
+  stripeProductId String?
+  stripePriceId   String?
+  isActive        Boolean  @default(true)
+  tenants         Tenant[]
+  @@map("plans")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  tenantId             String             @unique
+  planId               String
+  stripeSubscriptionId String?            @unique
+  stripeCustomerId     String?
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  tenantId  String
+  metric    String
+  value     BigInt
+  period    DateTime
+  createdAt DateTime @default(now())
+  @@unique([tenantId, metric, period])
+  @@map("usage_records")
+}
