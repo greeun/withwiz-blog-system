@@ -20,7 +20,7 @@ const mockUserRepoFindById = vi.fn();
 const mockUserRepoUpdateLastLoginAt = vi.fn();
 const mockUserRepoUpdate = vi.fn();
 
-vi.mock('@withwiz/toolkit/auth', () => {
+vi.mock('@withwiz/toolkit/core/auth', () => {
   class MockJWTService {
     constructor(_config: any) {}
     createTokenPair = mockCreateTokenPair;
@@ -43,7 +43,7 @@ vi.mock('@withwiz/toolkit/auth', () => {
   };
 });
 
-vi.mock('@withwiz/toolkit/auth/adapters/prisma', () => {
+vi.mock('@withwiz/toolkit/prisma/auth-adapter', () => {
   class MockPrismaUserRepository {
     constructor(_prisma: any) {}
     create = mockUserRepoCreate;
@@ -137,7 +137,7 @@ describe('AuthService', () => {
         password: 'hashed-pw',
         name: 'Test User',
       });
-      expect(mockCreateTokenPair).toHaveBeenCalledWith(MOCK_USER);
+      expect(mockCreateTokenPair).toHaveBeenCalledWith({ ...MOCK_USER, role: 'USER' });
       expect(result.user).toEqual(MOCK_USER);
       expect(result.tokens).toEqual(MOCK_TOKENS);
     });

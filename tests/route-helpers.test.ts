@@ -6,12 +6,12 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@withwiz/toolkit/middleware/wrappers', () => ({
+vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
   withPublicApi: vi.fn((handler: any) => handler),
   withAdminApi: vi.fn((handler: any) => handler),
 }));
 
-vi.mock('@withwiz/toolkit/utils/api-helpers', () => ({
+vi.mock('@withwiz/toolkit/next/utils/api-helpers', () => ({
   parsePagination: vi.fn().mockReturnValue({ page: 1, limit: 10 }),
   getSearchParam: vi.fn().mockReturnValue(null),
 }));

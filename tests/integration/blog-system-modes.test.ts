@@ -33,7 +33,7 @@ vi.mock('@withwiz/blog-core/services', () => ({
 
 // ── toolkit auth 모킹 ──
 
-vi.mock('@withwiz/toolkit/auth', () => {
+vi.mock('@withwiz/toolkit/core/auth', () => {
   class MockJWTService {
     sign = vi.fn();
     verify = vi.fn();
@@ -59,7 +59,7 @@ vi.mock('@withwiz/toolkit/auth', () => {
   };
 });
 
-vi.mock('@withwiz/toolkit/auth/adapters/prisma', () => {
+vi.mock('@withwiz/toolkit/prisma/auth-adapter', () => {
   class MockPrismaUserRepository {
     findByEmail = vi.fn();
     findById = vi.fn();
@@ -83,13 +83,13 @@ vi.mock('@withwiz/toolkit/auth/adapters/prisma', () => {
   };
 });
 
-vi.mock('@withwiz/toolkit/middleware/wrappers', () => ({
+vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
   withPublicApi: vi.fn((handler: any) => handler),
   withAdminApi: vi.fn((handler: any) => handler),
   withAuthApi: vi.fn((handler: any) => handler),
 }));
 
-vi.mock('@withwiz/toolkit/utils/api-helpers', () => ({
+vi.mock('@withwiz/toolkit/next/utils/api-helpers', () => ({
   parsePagination: vi.fn().mockReturnValue({ page: 1, limit: 10 }),
   getSearchParam: vi.fn().mockReturnValue(null),
 }));

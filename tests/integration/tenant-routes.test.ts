@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── 미들웨어 모킹 ──
 
-vi.mock('@withwiz/toolkit/middleware/wrappers', () => ({
+vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
   withAdminApi: vi.fn((handler: any) => {
     return (req: Request, props?: unknown) => {
       const context = {
@@ -21,7 +21,7 @@ vi.mock('@withwiz/toolkit/middleware/wrappers', () => ({
   }),
 }));
 
-vi.mock('@withwiz/toolkit/utils/api-helpers', () => ({
+vi.mock('@withwiz/toolkit/next/utils/api-helpers', () => ({
   parsePagination: vi.fn((req: Request) => {
     const url = new URL(req.url);
     return {
