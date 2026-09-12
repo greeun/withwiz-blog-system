@@ -31,7 +31,9 @@
     "build": "tsup && tsc --emitDeclarationOnly --skipLibCheck",
     "build:js": "tsup",
     "build:types": "tsc --emitDeclarationOnly --skipLibCheck",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@withwiz/blog-core": "^2.1.2",
@@ -45,9 +47,16 @@
     "zod": ">=3"
   },
   "devDependencies": {
+    "@prisma/client": "^7.10.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
+    "@withwiz/toolkit": "^0.13.0",
+    "next": "^16.3.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "tsup": "^8.5.1",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.7",
+    "zod": "^4.6.2"
   }
 }

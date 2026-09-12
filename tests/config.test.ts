@@ -1,7 +1,7 @@
 /**
  * Task 1: resolveBlogConfig 테스트 (8건)
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { resolveBlogConfig } from '@withwiz/blog-system/core';
 import type { BlogSystemConfig } from '@withwiz/blog-system/types';
 

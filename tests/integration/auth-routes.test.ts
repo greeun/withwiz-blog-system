@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── 미들웨어 모킹 ──
 
-vi.mock('@withwiz/toolkit/middleware/wrappers', () => ({
+vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
   withPublicApi: vi.fn((handler: any) => {
     return (req: Request, props?: unknown) => {
       const context = { request: req, user: undefined, metadata: {} };

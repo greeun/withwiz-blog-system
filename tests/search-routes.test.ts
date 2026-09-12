@@ -3,11 +3,11 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@withwiz/toolkit/middleware/wrappers', () => ({
+vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
   withPublicApi: vi.fn((handler: any) => handler),
 }));
 
-vi.mock('@withwiz/toolkit/utils/api-helpers', () => ({
+vi.mock('@withwiz/toolkit/next/utils/api-helpers', () => ({
   parsePagination: vi.fn((req: Request, defaultLimit = 12) => {
     const u = new URL(req.url);
     return {
