@@ -505,6 +505,7 @@ npx vitest run --project blog-system
 | BS-AR-03 | verifySuperAdmin: role 없음 → 403 응답 |
 | BS-AR-04 | safeCount: 존재하는 모델 → count 반환 |
 | BS-AR-05 | safeCount: 존재하지 않는 모델 → 0 반환 |
+| BS-AR-06 | users.list: 평면 PaginatedResult 구조 반환 (pagination 객체 없음) |
 
 - [ ] **Step 1: 테스트 파일 작성**
 - [ ] **Step 2: 실행 확인**
