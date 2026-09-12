@@ -28,7 +28,7 @@ function createMockSearchService(): SearchService {
   return {
     search: vi.fn().mockResolvedValue({
       items: [{ id: 'p-1', slug: 'hello', title: 'Hello', rank: 0.9 }],
-      pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1, hasMore: false },
+      page: 1, limit: 12, total: 1, totalPages: 1,
     }),
     buildQuery: vi.fn((input: string) => input),
   } as unknown as SearchService;

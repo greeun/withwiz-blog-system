@@ -30,14 +30,14 @@ function createMockTagService(): TagService {
     remove: vi.fn().mockResolvedValue(undefined),
     listAll: vi.fn().mockResolvedValue({
       items: [],
-      pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0, hasMore: false },
+      page: 1, limit: 20, total: 0, totalPages: 0,
     }),
     getTagCloud: vi.fn().mockResolvedValue([
       { id: 't-1', slug: 'news', name: '뉴스', postCount: 5, createdAt: new Date(), updatedAt: new Date() },
     ]),
     getPostsByTag: vi.fn().mockResolvedValue({
       items: [],
-      pagination: { page: 1, pageSize: 12, total: 0, totalPages: 0, hasMore: false },
+      page: 1, limit: 12, total: 0, totalPages: 0,
     }),
     getTagsByPost: vi.fn().mockResolvedValue([]),
     getRelatedPosts: vi.fn().mockResolvedValue([]),

@@ -85,7 +85,7 @@ function createMockBlogService() {
   return {
     listPublished: vi.fn().mockResolvedValue({
       items: [{ id: '1', title: '테스트 포스트', slug: 'test' }],
-      pagination: { page: 1, pageSize: 12, total: 1, totalPages: 1, hasMore: false },
+      page: 1, limit: 12, total: 1, totalPages: 1,
     }),
     getPublishedBySlug: vi.fn().mockImplementation(async (slug: string) => {
       if (slug === 'not-found') return null;
@@ -96,7 +96,7 @@ function createMockBlogService() {
     ]),
     listAll: vi.fn().mockResolvedValue({
       items: [{ id: '1', title: '전체 글', slug: 'all-1' }],
-      pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1, hasMore: false },
+      page: 1, limit: 10, total: 1, totalPages: 1,
     }),
     create: vi.fn().mockResolvedValue({
       id: 'new-1',

@@ -69,7 +69,7 @@ function createMockDomainService() {
           createdAt: new Date(),
         },
       ],
-      pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1, hasMore: false },
+      page: 1, limit: 10, total: 1, totalPages: 1,
     }),
   } as any;
 }

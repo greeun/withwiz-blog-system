@@ -28,7 +28,7 @@ function createMockTenantService() {
     deactivate: vi.fn(),
     listAll: vi.fn().mockResolvedValue({
       items: [],
-      pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0, hasMore: false },
+      page: 1, limit: 10, total: 0, totalPages: 0,
     }),
     getSettings: vi.fn(),
     updateSettings: vi.fn(),
@@ -42,7 +42,7 @@ function createMockTenantUserService() {
     updateRole: vi.fn(),
     listUsers: vi.fn().mockResolvedValue({
       items: [],
-      pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0, hasMore: false },
+      page: 1, limit: 20, total: 0, totalPages: 0,
     }),
     getUserRole: vi.fn(),
     getUserTenants: vi.fn().mockResolvedValue([]),
