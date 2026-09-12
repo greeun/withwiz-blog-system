@@ -183,7 +183,7 @@ npx vitest run --project blog-system
 | BS-TS-10 | deactivate: isActive=false로 변경 |
 | BS-TS-11 | listAll: 검색어 없을 때 빈 where |
 | BS-TS-12 | listAll: 검색어 있을 때 OR 조건 (name + slug) |
-| BS-TS-13 | listAll: 페이지네이션 계산 (skip, totalPages, hasMore) |
+| BS-TS-13 | listAll: 페이지네이션 계산 (skip, totalPages, total) |
 | BS-TS-14 | getSettings: 존재하지 않는 테넌트 → Error |
 | BS-TS-15 | updateSettings: deep merge 동작 (기존 값 보존 + 새 값 오버라이드) |
 | BS-TS-16 | updateSettings: domainVerification 보존 |

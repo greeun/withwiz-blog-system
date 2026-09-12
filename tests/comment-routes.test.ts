@@ -40,7 +40,7 @@ function createMockCommentService(): CommentService {
     listByPost: vi.fn().mockResolvedValue([]),
     listAll: vi.fn().mockResolvedValue({
       items: [],
-      pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0, hasMore: false },
+      page: 1, limit: 20, total: 0, totalPages: 0,
     }),
     updateStatus: vi
       .fn()

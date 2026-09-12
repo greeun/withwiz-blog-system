@@ -44,7 +44,7 @@ function createMockTenantService() {
   return {
     listAll: vi.fn().mockResolvedValue({
       items: [{ id: 't-1', name: '테스트 테넌트', slug: 'test-tenant' }],
-      pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1, hasMore: false },
+      page: 1, limit: 10, total: 1, totalPages: 1,
     }),
     create: vi.fn().mockImplementation(async (data: any) => {
       if (data.slug === 'duplicate') {
@@ -76,7 +76,7 @@ function createMockTenantUserService() {
   return {
     listUsers: vi.fn().mockResolvedValue({
       items: [{ id: 'tu-1', userId: 'u-1', tenantId: 't-1', role: TenantRole.OWNER }],
-      pagination: { page: 1, pageSize: 10, total: 1, totalPages: 1, hasMore: false },
+      page: 1, limit: 10, total: 1, totalPages: 1,
     }),
     addUser: vi.fn().mockResolvedValue({
       id: 'tu-new',
