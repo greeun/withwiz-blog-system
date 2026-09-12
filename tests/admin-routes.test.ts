@@ -1,5 +1,5 @@
 /**
- * Task 17: admin-routes 헬퍼 테스트 (5건)
+ * Task 17: admin-routes 헬퍼 테스트 (6건)
  *
  * verifySuperAdmin, safeCount는 비공개 함수이므로
  * createSuperAdminRoutes 반환 핸들러를 통해 간접 테스트한다.
@@ -155,5 +155,23 @@ describe('admin-routes 헬퍼', () => {
     const body = await response.json();
     // safeCount가 0을 반환해야 함
     expect(body.data.stats.totalPosts).toBe(0);
+  });
+  // ── users.list 응답 구조 ──
+  it('BS-AR-06: users.list — 평면 PaginatedResult 구조 반환', async () => {
+    prisma.user.count.mockResolvedValue(25);
+    prisma.user.findMany.mockResolvedValue([{ id: 'u-1', email: 'a@example.com' }]);
+
+    const context = {
+      request: new Request('http://localhost/api/admin/users'),
+      user: { id: 'u-1', role: SystemRole.SUPER_ADMIN },
+      metadata: {},
+    };
+
+    const response = await routes.users.list.GET(context as any);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.data.items).toHaveLength(1);
+    expect(body.data).toMatchObject({ page: 1, limit: 10, total: 25, totalPages: 3 });
+    expect(body.data.pagination).toBeUndefined();
   });
 });

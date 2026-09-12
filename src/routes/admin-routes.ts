@@ -323,13 +323,10 @@ export function createSuperAdminRoutes(
             success: true,
             data: {
               items,
-              pagination: {
-                page,
-                pageSize: limit,
-                total,
-                totalPages,
-                hasMore: page < totalPages,
-              },
+              page,
+              limit,
+              total,
+              totalPages,
             },
           });
         }),
