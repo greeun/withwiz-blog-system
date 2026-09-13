@@ -1,6 +1,7 @@
 import type { BlogConfig, CategoryTheme, StorageAdapter, BlogI18nStrings } from '@withwiz/blog-core/types';
 import type {
   BlogService,
+  BlogServiceConfig,
   TagService,
   CommentService,
   SearchService,
@@ -78,6 +79,16 @@ export interface BlogSystemConfig {
 
   /** 스토리지 어댑터 (선택). 지정하면 포스트 삭제 시 첨부 이미지 정리에 사용된다. */
   storage?: StorageAdapter;
+
+  /**
+   * 포스트 본문 HTML 새니타이저 (선택).
+   * 지정하면 single·multi 모드의 블로그 서비스가 create·update 시 본문 저장 전에 이 함수를 사용한다.
+   * 지정하지 않으면 blog-core 기본 새니타이저를 사용한다. 기본 새니타이저는 DOMPurify 를
+   * 불러오지 못하는 번들 환경(예: Next.js Turbopack 서버 번들)에서 정규식 폴백으로 동작하므로,
+   * 신뢰할 수 없는 HTML 을 다룬다면 호스트가 검증된 새니타이저를 지정하는 것을 권장한다.
+   * 타입은 blog-core `BlogServiceConfig.sanitizeContent` 와 같다.
+   */
+  sanitizeContent?: BlogServiceConfig['sanitizeContent'];
 
   /** multi 모드 전용 */
   billing?: {
