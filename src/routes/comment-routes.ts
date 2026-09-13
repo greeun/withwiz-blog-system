@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createHmac } from 'node:crypto';
-import {
+// 반환 타입 선언 전용 import (실제 래핑은 route-error 의 공통 래퍼가 수행한다)
+import type {
   withPublicApi,
   withAdminApi,
 } from '@withwiz/toolkit/next/middleware/wrappers';
+import { withPublicRoute, withAdminRoute } from './route-error';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import {
   parsePagination,
@@ -93,7 +95,7 @@ export function createCommentRoutes(
   return {
     public: {
       list: {
-        GET: withPublicApi(async (context: IApiContext) => {
+        GET: withPublicRoute(async (context: IApiContext) => {
           const postId = getSearchParam(context.request, 'postId');
           if (!postId) {
             return badRequest('postId는 필수 파라미터입니다.');
@@ -121,7 +123,7 @@ export function createCommentRoutes(
       },
 
       create: {
-        POST: withPublicApi(async (context: IApiContext) => {
+        POST: withPublicRoute(async (context: IApiContext) => {
           const body = await context.request.json().catch(() => null);
           if (!body || typeof body !== 'object') {
             return badRequest('요청 본문이 올바르지 않습니다.');
@@ -158,30 +160,24 @@ export function createCommentRoutes(
           const ipHash = ip ? hashIp(ip, hmacSecret) : undefined;
           const userId = context.user?.id;
 
-          try {
-            const created = await commentService.create(input, {
-              userId,
-              ipHash,
-            });
-            return NextResponse.json(
-              { success: true, data: created },
-              { status: 201 },
-            );
-          } catch (err) {
-            const message =
-              err instanceof Error ? err.message : '댓글 작성에 실패했습니다.';
-            return NextResponse.json(
-              { success: false, error: { message } },
-              { status: 400 },
-            );
-          }
+          // 예외는 withPublicRoute 의 공통 래퍼가 처리한다.
+          // 여기서 일괄 400 으로 정규화하면 CommentService 가 던지는
+          // COMMENT_RATE_LIMIT_EXCEEDED(429) 같은 상태 코드가 유실된다.
+          const created = await commentService.create(input, {
+            userId,
+            ipHash,
+          });
+          return NextResponse.json(
+            { success: true, data: created },
+            { status: 201 },
+          );
         }),
       },
     },
 
     admin: {
       listAll: {
-        GET: withAdminApi(async (context: IApiContext) => {
+        GET: withAdminRoute(async (context: IApiContext) => {
           const { page, limit } = parsePagination(context.request);
           const statusParam = getSearchParam(context.request, 'status');
           const postId = getSearchParam(context.request, 'postId') ?? undefined;
@@ -202,7 +198,7 @@ export function createCommentRoutes(
       },
 
       updateStatus: {
-        PATCH: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PATCH: withAdminRoute(async (context: IApiContext, props?: unknown) => {
           const id = await getRouteParam(props, 'id');
           const body = await context.request.json().catch(() => null);
           if (!body || typeof body !== 'object') {
@@ -220,7 +216,7 @@ export function createCommentRoutes(
       },
 
       bulkUpdateStatus: {
-        PATCH: withAdminApi(async (context: IApiContext) => {
+        PATCH: withAdminRoute(async (context: IApiContext) => {
           const body = await context.request.json().catch(() => null);
           if (!body || typeof body !== 'object') {
             return badRequest('요청 본문이 올바르지 않습니다.');
@@ -243,7 +239,7 @@ export function createCommentRoutes(
       },
 
       remove: {
-        DELETE: withAdminApi(async (_context: IApiContext, props?: unknown) => {
+        DELETE: withAdminRoute(async (_context: IApiContext, props?: unknown) => {
           const id = await getRouteParam(props, 'id');
           await commentService.remove(id);
           return new NextResponse(null, { status: 204 });
@@ -251,7 +247,7 @@ export function createCommentRoutes(
       },
 
       bulkRemove: {
-        DELETE: withAdminApi(async (context: IApiContext) => {
+        DELETE: withAdminRoute(async (context: IApiContext) => {
           const body = await context.request.json().catch(() => null);
           if (!body || typeof body !== 'object') {
             return badRequest('요청 본문이 올바르지 않습니다.');
@@ -266,7 +262,7 @@ export function createCommentRoutes(
       },
 
       pendingCount: {
-        GET: withAdminApi(async () => {
+        GET: withAdminRoute(async () => {
           const count = await commentService.getPendingCount();
           return NextResponse.json({ success: true, data: { count } });
         }),

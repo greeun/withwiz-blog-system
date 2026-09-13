@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import {
+// 반환 타입 선언 전용 import (실제 래핑은 route-error 의 공통 래퍼가 수행한다)
+import type {
   withPublicApi,
   withAdminApi,
 } from '@withwiz/toolkit/next/middleware/wrappers';
+import { withPublicRoute, withAdminRoute } from './route-error';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import {
   parsePagination,
@@ -48,7 +50,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
   return {
     public: {
       list: {
-        GET: withPublicApi(async (context: IApiContext) => {
+        GET: withPublicRoute(async (context: IApiContext) => {
           const parsed = parsePagination(context.request, 20, 100);
           const page = Number.isFinite(parsed.page) ? parsed.page : 1;
           const limit = Number.isFinite(parsed.limit) ? parsed.limit : 20;
@@ -69,7 +71,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
       },
 
       cloud: {
-        GET: withPublicApi(async (context: IApiContext) => {
+        GET: withPublicRoute(async (context: IApiContext) => {
           const limitParam = getSearchParam(context.request, 'limit');
           const limit = limitParam ? parseInt(limitParam, 10) : undefined;
 
@@ -90,7 +92,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
       },
 
       posts: {
-        GET: withPublicApi(async (context: IApiContext, props?: unknown) => {
+        GET: withPublicRoute(async (context: IApiContext, props?: unknown) => {
           const slug = await getRouteParam(props, 'slug');
           const parsed = parsePagination(context.request, 12, 50);
           const page = Number.isFinite(parsed.page) ? parsed.page : 1;
@@ -113,7 +115,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
 
     admin: {
       list: {
-        GET: withAdminApi(async (context: IApiContext) => {
+        GET: withAdminRoute(async (context: IApiContext) => {
           const { page, limit } = parsePagination(context.request);
           const search = getSearchParam(context.request, 'search') ?? undefined;
 
@@ -122,7 +124,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
           return NextResponse.json({ success: true, data: result });
         }),
 
-        POST: withAdminApi(async (context: IApiContext) => {
+        POST: withAdminRoute(async (context: IApiContext) => {
           const body = await context.request.json().catch(() => null);
           if (!body || typeof body !== 'object') {
             return badRequest('요청 본문이 올바르지 않습니다.');
@@ -150,7 +152,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
       },
 
       detail: {
-        GET: withAdminApi(async (_context: IApiContext, props?: unknown) => {
+        GET: withAdminRoute(async (_context: IApiContext, props?: unknown) => {
           const id = await getRouteParam(props, 'id');
           const tag = await tagService.getById(id);
           if (!tag) {
@@ -162,7 +164,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
           return NextResponse.json({ success: true, data: tag });
         }),
 
-        PUT: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PUT: withAdminRoute(async (context: IApiContext, props?: unknown) => {
           const id = await getRouteParam(props, 'id');
           const body = await context.request.json().catch(() => null);
           if (!body || typeof body !== 'object') {
@@ -187,7 +189,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
           return NextResponse.json({ success: true, data: updated });
         }),
 
-        DELETE: withAdminApi(async (_context: IApiContext, props?: unknown) => {
+        DELETE: withAdminRoute(async (_context: IApiContext, props?: unknown) => {
           const id = await getRouteParam(props, 'id');
           await tagService.remove(id);
           return new NextResponse(null, { status: 204 });
@@ -195,7 +197,7 @@ export function createTagRoutes(tagService: TagService): TagRoutes {
       },
 
       byPost: {
-        GET: withAdminApi(async (_context: IApiContext, props?: unknown) => {
+        GET: withAdminRoute(async (_context: IApiContext, props?: unknown) => {
           const postId = await getRouteParam(props, 'postId');
           const tags = await tagService.getTagsByPost(postId);
           return NextResponse.json({ success: true, data: tags });

@@ -35,3 +35,14 @@ export type { SearchRoutes } from './search-routes';
 
 export { createSchedulerRoutes } from './scheduler-routes';
 export type { SchedulerRoutes, SchedulerRoutesConfig } from './scheduler-routes';
+
+export {
+  isBlogErrorLike,
+  toErrorResponse,
+  withRouteErrorHandling,
+  withPublicRoute,
+  withAdminRoute,
+  getErrorCode,
+  getErrorStatus,
+} from './route-error';
+export type { BlogErrorLike } from './route-error';

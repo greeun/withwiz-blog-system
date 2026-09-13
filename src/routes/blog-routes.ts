@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import {
+// 반환 타입 선언 전용 import (실제 래핑은 route-error 의 공통 래퍼가 수행한다)
+import type {
   withPublicApi,
   withAdminApi,
 } from '@withwiz/toolkit/next/middleware/wrappers';
+import { withPublicRoute, withAdminRoute } from './route-error';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import {
   parsePagination,
@@ -155,7 +157,7 @@ export function createBlogRoutes(
   return {
     public: {
       list: {
-        GET: withPublicApi(async (context: IApiContext) => {
+        GET: withPublicRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -186,7 +188,7 @@ export function createBlogRoutes(
       },
 
       detail: {
-        GET: withPublicApi(async (context: IApiContext, props?: unknown) => {
+        GET: withPublicRoute(async (context: IApiContext, props?: unknown) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -214,7 +216,7 @@ export function createBlogRoutes(
       },
 
       featured: {
-        GET: withPublicApi(async (context: IApiContext) => {
+        GET: withPublicRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -239,7 +241,7 @@ export function createBlogRoutes(
 
     admin: {
       list: {
-        GET: withAdminApi(async (context: IApiContext) => {
+        GET: withAdminRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -267,7 +269,7 @@ export function createBlogRoutes(
           return NextResponse.json({ success: true, data: result });
         }),
 
-        POST: withAdminApi(async (context: IApiContext) => {
+        POST: withAdminRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -287,7 +289,7 @@ export function createBlogRoutes(
           );
         }),
 
-        DELETE: withAdminApi(async (context: IApiContext) => {
+        DELETE: withAdminRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -306,7 +308,7 @@ export function createBlogRoutes(
       },
 
       detail: {
-        GET: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        GET: withAdminRoute(async (context: IApiContext, props?: unknown) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -324,7 +326,7 @@ export function createBlogRoutes(
           return NextResponse.json({ success: true, data: post });
         }),
 
-        PUT: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PUT: withAdminRoute(async (context: IApiContext, props?: unknown) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -347,7 +349,7 @@ export function createBlogRoutes(
           return NextResponse.json({ success: true, data: post });
         }),
 
-        DELETE: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        DELETE: withAdminRoute(async (context: IApiContext, props?: unknown) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -360,7 +362,7 @@ export function createBlogRoutes(
       },
 
       publish: {
-        PATCH: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PATCH: withAdminRoute(async (context: IApiContext, props?: unknown) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -373,7 +375,7 @@ export function createBlogRoutes(
       },
 
       bulk: {
-        PATCH: withAdminApi(async (context: IApiContext) => {
+        PATCH: withAdminRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -398,7 +400,7 @@ export function createBlogRoutes(
           });
         }),
 
-        DELETE: withAdminApi(async (context: IApiContext) => {
+        DELETE: withAdminRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -417,7 +419,7 @@ export function createBlogRoutes(
       },
 
       slugCheck: {
-        GET: withAdminApi(async (context: IApiContext) => {
+        GET: withAdminRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
@@ -449,7 +451,7 @@ export function createBlogRoutes(
       },
 
       dashboard: {
-        GET: withAdminApi(async (context: IApiContext) => {
+        GET: withAdminRoute(async (context: IApiContext) => {
           const resolved = await resolveService(context.request);
           if (!resolved.ok) return resolved.response;
           const svc = resolved.service;
