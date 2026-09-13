@@ -1,6 +1,6 @@
 {
   "name": "@withwiz/blog-system",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Blog SaaS framework — single/multi-tenant, auth, billing, domain management",
   "license": "MIT",
   "private": false,
