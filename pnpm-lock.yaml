@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@withwiz/blog-core':
-        specifier: ^2.1.2
-        version: 2.1.2(@aws-sdk/client-s3@3.1130.0)(@prisma/client@7.10.0(typescript@5.9.3))(@withwiz/block-editor@0.3.0(react@19.3.0))(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(zod@4.6.2)
+        specifier: ^2.1.4
+        version: 2.1.4(@aws-sdk/client-s3@3.1131.0)(@prisma/client@7.10.0(typescript@5.9.3))(@withwiz/block-editor@0.3.0(react@19.3.0))(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(zod@4.6.2)
       stripe:
         specifier: ^17
         version: 17.7.0
@@ -25,8 +25,8 @@ importers:
         specifier: ^19.0.0
         version: 19.3.0
       '@withwiz/toolkit':
-        specifier: ^0.13.0
-        version: 0.13.0(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: ^0.15.0
+        version: 0.15.0(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       next:
         specifier: ^16.3.4
         version: 16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -55,8 +55,8 @@ packages:
     resolution: {integrity: sha512-6uTniZc87q+B5eXouGTl+7Tmc482rEeCcvxpsvREP8EfF0gvloRZ41UOA9sbSJlyy8TbqIBXb3kKfKarEArUQA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.1130.0':
-    resolution: {integrity: sha512-TUe0hgQi3RtuccmTgpUsRIuPk07ZtJE6s3vpOeWCM8sibLNXPVKweemNEz5gwaRYTor8MAGgjlyVZfKGuu1ZOQ==}
+  '@aws-sdk/client-s3@3.1131.0':
+    resolution: {integrity: sha512-jMw3q5sYNvWJRngkNwdS3H2WPBcdqhdrOez+7fBUB26fpH/2+TaJcDdlzdjgLTMhFTq2eOyXBSy1T/4A6CL/Lw==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.978.0':
@@ -768,8 +768,8 @@ packages:
     peerDependencies:
       react: '>=18.0.0'
 
-  '@withwiz/blog-core@2.1.2':
-    resolution: {integrity: sha512-bUUc99upfpTK8T6/3RjFMV9kcBhSTqSYnu1rT1TV2nmqUQ4zFTDvBTZ1uHp/oXlOmokRsvXyDhvMO01UObW7mQ==}
+  '@withwiz/blog-core@2.1.4':
+    resolution: {integrity: sha512-isvH7pIAw1/5z/yyJErr58eCyq3kPwHobKLNJbFfTxPe8xo4ATR7ZQoIqddYNXb9MQxv8Wc/1RdQnogiyT9Srw==}
     peerDependencies:
       '@aws-sdk/client-s3': '>=3.0.0'
       '@prisma/client': '>=5.0.0'
@@ -798,8 +798,8 @@ packages:
       zod:
         optional: true
 
-  '@withwiz/toolkit@0.13.0':
-    resolution: {integrity: sha512-LYYKUzYle8nthC8NzRpHyoFOhYo8OmWpI2vcJnVY+HyXkIP7LO4Rcixx8j5GjyF3T9hN8YFUALZE6sVshR5l/g==}
+  '@withwiz/toolkit@0.15.0':
+    resolution: {integrity: sha512-6GUwDus5SnIq4G4yTnoyIHmLn22EGD7nDvXBnMzhX4tup99wtwfl3g4EqHdhfVeA4hCUstSbFv46fmrTgdWmlQ==}
     engines: {node: '>=18'}
     peerDependencies:
       argon2: '>=0.31.0'
@@ -1480,7 +1480,7 @@ snapshots:
       '@smithy/types': 4.18.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1130.0':
+  '@aws-sdk/client-s3@3.1131.0':
     dependencies:
       '@aws-sdk/checksums': 3.1001.0
       '@aws-sdk/core': 3.978.0
@@ -2074,7 +2074,7 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  '@withwiz/blog-core@2.1.2(@aws-sdk/client-s3@3.1130.0)(@prisma/client@7.10.0(typescript@5.9.3))(@withwiz/block-editor@0.3.0(react@19.3.0))(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(zod@4.6.2)':
+  '@withwiz/blog-core@2.1.4(@aws-sdk/client-s3@3.1131.0)(@prisma/client@7.10.0(typescript@5.9.3))(@withwiz/block-editor@0.3.0(react@19.3.0))(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(zod@4.6.2)':
     dependencies:
       '@prisma/client': 7.10.0(typescript@5.9.3)
       '@withwiz/block-editor': 0.3.0(react@19.3.0)
@@ -2083,12 +2083,12 @@ snapshots:
       react: 19.3.0
       slugify: 1.6.9
     optionalDependencies:
-      '@aws-sdk/client-s3': 3.1130.0
+      '@aws-sdk/client-s3': 3.1131.0
       zod: 4.6.2
 
-  '@withwiz/toolkit@0.13.0(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@withwiz/toolkit@0.15.0(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@aws-sdk/client-s3': 3.1130.0
+      '@aws-sdk/client-s3': 3.1131.0
       '@upstash/redis': 1.38.4
       bcryptjs: 3.0.3
       clsx: 2.1.1
