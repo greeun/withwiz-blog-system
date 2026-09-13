@@ -6,6 +6,9 @@
  * COMMENT_RATE_LIMIT_EXCEEDED → 429). 이 모듈은 그 상태 코드와 오류 코드를
  * 호스트 응답까지 그대로 전달한다.
  *
+ * 상태 코드가 없는 예외(Prisma 오류 등)는 응답으로 바꾸지 않고 다시 던져,
+ * 바깥의 toolkit 오류 처리 미들웨어가 분류하게 한다.
+ *
  * `instanceof BlogError` 검사는 blog-core 가 중복 설치되거나 번들링 과정에서
  * 클래스가 복제되면 패키지 경계를 넘는 순간 실패한다. 따라서 클래스 아이덴티티
  * 대신 구조적 판별(`code` + `statusCode`/`status` 속성 존재 여부)을 사용한다.
@@ -78,6 +81,8 @@ function getErrorMessage(error: unknown): string | null {
  *
  * - 상태 코드를 가진 예외(BlogError 등) → 그 상태 코드와 오류 코드를 보존한다.
  * - 그 외 예기치 못한 예외 → 500 + 일반 메시지. 내부 정보를 노출하지 않는다.
+ *   (withRouteErrorHandling 은 이런 예외를 여기로 보내지 않고 toolkit 에 넘긴다.
+ *    이 분기는 toErrorResponse 를 직접 호출하는 쪽을 위한 안전장치다.)
  */
 export function toErrorResponse(error: unknown): NextResponse {
   const status = getErrorStatus(error);
@@ -107,12 +112,20 @@ export function toErrorResponse(error: unknown): NextResponse {
   );
 }
 
-/** 라우트 핸들러에서 빠져나온 예외를 응답으로 변환하는 공통 래퍼 */
+/**
+ * 라우트 핸들러에서 빠져나온 예외 중 상태 코드를 가진 것만 응답으로 변환하는 공통 래퍼
+ *
+ * 상태 코드가 없는 예외는 원본 그대로 다시 던진다. 이 래퍼를 감싸는 toolkit 의
+ * errorHandlerMiddleware 가 Prisma 오류를 분류하고(P2002 → 409, P2025 → 404,
+ * PrismaClientValidationError → 400), 분류되지 않는 예외는 내부 정보를 숨긴 500 으로
+ * 응답한다. 여기서 500 으로 확정하면 그 분류가 적용되지 않는다.
+ */
 export function withRouteErrorHandling(handler: TApiHandler): TApiHandler {
   return async (context, props) => {
     try {
       return await handler(context, props);
     } catch (error) {
+      if (getErrorStatus(error) === null) throw error;
       return toErrorResponse(error);
     }
   };
