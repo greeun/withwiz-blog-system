@@ -73,6 +73,13 @@ export {
   createSearchRoutes,
   createSchedulerRoutes,
 } from './routes';
+
+export {
+  isBlogErrorLike,
+  toErrorResponse,
+  withRouteErrorHandling,
+} from './routes';
+export type { BlogErrorLike } from './routes';
 export type {
   TagRoutes,
   CommentRoutes,

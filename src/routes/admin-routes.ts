@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAdminApi } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
+import { isBlogErrorLike, toErrorResponse } from './route-error';
 import {
   parsePagination,
   getSearchParam,
@@ -538,6 +539,11 @@ export function createSuperAdminRoutes(
               { status: 201 },
             );
           } catch (error) {
+            // 온보딩은 blog-core BlogService 를 호출하므로 BlogError 가 올라올 수 있다.
+            // 그 경우 blog-core 가 지정한 상태 코드와 오류 코드를 보존한다.
+            if (isBlogErrorLike(error)) {
+              return toErrorResponse(error);
+            }
             return NextResponse.json(
               {
                 success: false,
