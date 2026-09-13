@@ -7,6 +7,7 @@ import {
 } from '@withwiz/blog-core/services';
 import type {
   BlogService,
+  BlogServiceConfig,
   TagService,
   CommentService,
   SearchService,
@@ -54,10 +55,13 @@ export function createBlogSystem(config: BlogSystemConfig): BlogSystem {
   const searchEnabled = features.search !== false;
   const schedulerEnabled = features.scheduler?.enabled === true;
 
-  const blogServiceConfig = {
+  // single 모드의 blogService 와 multi 모드의 createScopedBlogService 가 함께 사용한다.
+  const blogServiceConfig: BlogServiceConfig = {
     modelName: blogConfig.modelName,
     enableTags: tagsEnabled,
     storage: config.storage,
+    // 미지정(undefined)이면 blog-core 가 기본 새니타이저를 사용한다.
+    sanitizeContent: config.sanitizeContent,
   };
 
   const authService = createAuthService(config.prisma, config.auth);
