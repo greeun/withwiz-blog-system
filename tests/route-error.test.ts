@@ -215,66 +215,80 @@ describe('라우트 오류 상태 코드 보존', () => {
     expect(body.error.code).toBe(BLOG_ERROR_CODES.FORBIDDEN);
   });
 
-  it('BS-ERR-06: status 없는 일반 Error → 500, 내부 메시지 미노출', async () => {
-    const routes = createTagRoutes(
-      tagServiceThrowing(new Error(INTERNAL_MARKER)),
-    );
+  // ── 상태 코드가 없는 예외는 라우트가 응답으로 바꾸지 않고 그대로 다시 던진다 ──
+  //
+  // 이 래퍼는 toolkit 의 withPublicApi/withAdminApi 안쪽에 있다. toolkit 의
+  // errorHandlerMiddleware 는 Prisma 오류를 code·클래스 이름으로 분류하고
+  // (P2002 → 409, P2025 → 404, PrismaClientValidationError → 400), 분류되지 않는
+  // 예외는 일반 메시지의 500 으로 응답해 내부 정보를 숨긴다.
+  // 0.2.1 은 여기서 모든 예외를 직접 500 으로 바꿔 그 분류를 가로막았다.
+  // (호스트에서 `GET /api/news?category=foo` 가 400 이 아닌 500 을 반환)
+  // 내부 정보 은닉은 toolkit 의 책임이며 toolkit 테스트가 검증한다.
 
-    const res = await routes.admin.list.POST(
-      jsonContext('http://localhost/api/admin/tags', NEW_TAG),
-    );
-    const body = await res.json();
+  it('BS-ERR-06: status 없는 일반 Error 는 응답으로 바꾸지 않고 그대로 다시 던진다', async () => {
+    const error = new Error(INTERNAL_MARKER);
+    const routes = createTagRoutes(tagServiceThrowing(error));
 
-    expect(res.status).toBe(500);
-    expect(body.success).toBe(false);
-    expect(body.error.code).toBe(BLOG_ERROR_CODES.INTERNAL_ERROR);
-    expect(JSON.stringify(body)).not.toContain('hunter2');
-    expect(JSON.stringify(body)).not.toContain('ECONNREFUSED');
-    // 내부 정보는 응답 대신 서버 로그로만 남는다.
-    expect(errorSpy).toHaveBeenCalled();
+    await expect(
+      routes.admin.list.POST(
+        jsonContext('http://localhost/api/admin/tags', NEW_TAG),
+      ),
+    ).rejects.toBe(error);
+    // 로그는 분류를 맡는 toolkit 이 남긴다. 여기서 남기면 같은 예외가 두 번 기록된다.
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 
-  it('BS-ERR-07: 댓글 라우트의 일반 Error 도 400 이 아닌 500', async () => {
-    const routes = createCommentRoutes(
-      commentServiceThrowing(new Error(INTERNAL_MARKER)),
-    );
+  it('BS-ERR-07: 댓글 라우트의 일반 Error 도 400 으로 정규화하지 않고 다시 던진다', async () => {
+    const error = new Error(INTERNAL_MARKER);
+    const routes = createCommentRoutes(commentServiceThrowing(error));
 
-    const res = await routes.public.create.POST(
-      jsonContext('http://localhost/api/comments', NEW_COMMENT),
-    );
-    const body = await res.json();
-
-    expect(res.status).toBe(500);
-    expect(JSON.stringify(body)).not.toContain('hunter2');
+    await expect(
+      routes.public.create.POST(
+        jsonContext('http://localhost/api/comments', NEW_COMMENT),
+      ),
+    ).rejects.toBe(error);
   });
 
-  it('BS-ERR-08: 검색 라우트의 일반 Error → 500, 내부 메시지 미노출', async () => {
-    const routes = createSearchRoutes(
-      searchServiceThrowing(new Error(INTERNAL_MARKER)),
-    );
+  it('BS-ERR-08: 검색 라우트의 일반 Error 도 그대로 다시 던진다', async () => {
+    const error = new Error(INTERNAL_MARKER);
+    const routes = createSearchRoutes(searchServiceThrowing(error));
 
-    const res = await routes.search.GET(
-      makeContext('http://localhost/api/search?q=hello'),
-    );
-    const body = await res.json();
-
-    expect(res.status).toBe(500);
-    expect(JSON.stringify(body)).not.toContain('hunter2');
+    await expect(
+      routes.search.GET(makeContext('http://localhost/api/search?q=hello')),
+    ).rejects.toBe(error);
   });
 
-  it('BS-ERR-09: code 만 있고 status 없는 시스템 오류 → 500 (오류 코드 미노출)', async () => {
+  it('BS-ERR-09: code 만 있고 status 없는 시스템 오류도 그대로 다시 던진다', async () => {
     const nodeError = Object.assign(new Error(INTERNAL_MARKER), {
       code: 'ECONNREFUSED',
     });
-
     const routes = createTagRoutes(tagServiceThrowing(nodeError));
-    const res = await routes.admin.list.POST(
-      jsonContext('http://localhost/api/admin/tags', NEW_TAG),
-    );
-    const body = await res.json();
 
-    expect(res.status).toBe(500);
-    expect(body.error.code).toBe(BLOG_ERROR_CODES.INTERNAL_ERROR);
+    await expect(
+      routes.admin.list.POST(
+        jsonContext('http://localhost/api/admin/tags', NEW_TAG),
+      ),
+    ).rejects.toBe(nodeError);
+  });
+
+  it('BS-ERR-14: Prisma 오류는 toolkit 이 분류하도록 원본 그대로 다시 던진다', async () => {
+    // Prisma 7 의 두 오류 형태를 모사한다. 클래스 이름과 code 속성이 분류 근거이므로
+    // 다시 던질 때 감싸거나 복제하면 toolkit 이 400/409 대신 500 으로 응답한다.
+    const validation = Object.assign(
+      new Error('Invalid value for argument `category`. Expected NewsCategory.'),
+      { name: 'PrismaClientValidationError' },
+    );
+    const duplicate = Object.assign(
+      new Error('Unique constraint failed on the fields: (`slug`)'),
+      { name: 'PrismaClientKnownRequestError', code: 'P2002' },
+    );
+
+    for (const error of [validation, duplicate]) {
+      const routes = createSearchRoutes(searchServiceThrowing(error));
+      await expect(
+        routes.search.GET(makeContext('http://localhost/api/search?q=hello')),
+      ).rejects.toBe(error);
+    }
   });
 
   it('BS-ERR-10: 정상 응답은 그대로 통과', async () => {
