@@ -872,7 +872,7 @@ pnpm exec vitest run \
 | 4 | BS-SC-04: `sanitizeContent` 미지정으로 생성한 뒤 create·update | 설정의 `sanitizeContent` 가 `undefined`, 기대값 `sanitizeHtmlContent(RAW_CONTENT)` 에 `<script` 없음, create·update 저장 `data.content` 가 모두 이 기대값과 같음 |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 4개 (현재)
-- **비고:** 태그 동기화 분기(`tagIds` 지정 시 `$transaction` 안의 `postTag.createMany`)는 입력에 `tagIds` 가 없어 실행되지 않고, `enableTags`·`storage` 전달은 단언하지 않는다(TC-I-004). blog-core 2.1.4 의 `create`·`update` 는 `sanitize(data.content) || data.content` 로 저장값을 정하므로, 호스트 새니타이저가 빈 문자열이나 `null` 을 반환하면 원문이 저장된다. 이 조합은 테스트하지 않는다. 2026-09-15 설치본 blog-core 2.1.4 의 `createBlogService` 에 `''`·`null` 을 반환하는 새니타이저를 지정해 저장소 밖 임시 스크립트로 확인한 결과 `<script>alert(1)</script>` 원문이 그대로 저장되었다([확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)).
+- **비고:** 태그 동기화 분기(`tagIds` 지정 시 `$transaction` 안의 `postTag.createMany`)는 입력에 `tagIds` 가 없어 실행되지 않고, `enableTags`·`storage` 전달은 단언하지 않는다(TC-I-004). 새니타이저가 빈 문자열이나 `null` 을 반환하는 조합은 테스트하지 않는다. 개발 lockfile 의 blog-core 2.1.4 는 이때 원문을 저장하지만(`sanitize(data.content) || data.content`, 2026-09-15 임시 스크립트로 확인), 이 결함은 blog-core 2.1.5(`b47b2f7`)에서 `sanitize(data.content) ?? ''` 로 수정되었다. blog-system 의 `dependencies` 범위 `^2.1.4` 는 2.1.5 를 포함하므로 사용하는 쪽에서는 2.1.5 가 설치된다([확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)).
 - **관련 요구사항:** OWASP A03:2021 Injection (저장형 XSS)
 
 ---
@@ -1635,7 +1635,7 @@ pnpm exec vitest run \
 | 3 | 슈퍼 관리자 `onboarding.create.POST` 경유 | tenantName 형식 검증 없이 `onboardTenant` 에 전달 |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 0개 (계획)
-- **비고:** 설치본 blog-core 2.1.4 의 `createBlogService.create` 는 content 에 새니타이저(`config.sanitizeContent ?? sanitizeHtmlContent`)를 적용하되 결과가 빈 문자열이나 `null` 이면 원문을 사용한다(`sanitize(data.content) || data.content`). 0.2.3 부터 호스트가 `BlogSystemConfig.sanitizeContent` 를 지정하면 `createBlogSystem` 이 만든 `onboardingService` 의 샘플 게시글에도 같은 새니타이저가 적용된다(코드 경로 `createScopedBlogService`, 전달 자체는 TC-I-008 이 검증). 새니타이저가 `onerror` 속성을 제거하는지와 title·excerpt 출력 시 이스케이프 여부는 blog-core 와 호스트 범위이므로 확인이 필요하다.
+- **비고:** blog-core 의 `createBlogService.create` 는 content 에 새니타이저(`config.sanitizeContent ?? sanitizeHtmlContent`)를 적용한다. 개발 lockfile 의 2.1.4 는 결과가 빈 문자열이나 `null` 이면 원문을 쓰지만, 2.1.5 부터는 빈 문자열을 저장한다. 0.2.3 부터 호스트가 `BlogSystemConfig.sanitizeContent` 를 지정하면 `createBlogSystem` 이 만든 `onboardingService` 의 샘플 게시글에도 같은 새니타이저가 적용된다(코드 경로 `createScopedBlogService`, 전달 자체는 TC-I-008 이 검증). 새니타이저가 `onerror` 속성을 제거하는지와 title·excerpt 출력 시 이스케이프 여부는 blog-core 와 호스트 범위이므로 확인이 필요하다.
 - **관련 요구사항:** OWASP A03:2021 Injection
 
 ---
@@ -2017,7 +2017,7 @@ pnpm exec vitest run \
 - **참조 스키마와 서비스 코드의 복합 키 이름**: `src/prisma/blog-system.prisma` 의 `TenantUser` 는 `@@unique([userId, tenantId])` 로 정의되어 있어 Prisma 가 생성하는 복합 키 이름은 `userId_tenantId` 가 된다. 반면 `tenant-user-service.ts` 는 모든 조회에서 `tenantId_userId` 를 사용한다. 모든 테스트가 Prisma 를 모킹하므로 이 불일치는 드러나지 않는다. 참조 스키마 파일은 "실제 마이그레이션에 사용되지 않음"으로 표기되어 있으므로 호스트 스키마 기준으로 확인이 필요하다.
 - **참조 스키마의 Subscription.tenantId `@unique`**: `createSubscription` 은 기존 구독 확인 없이 새 레코드를 만들고 `getSubscription` 은 `createdAt` 내림차순으로 최신 1건을 조회한다. 스키마대로라면 같은 테넌트의 두 번째 구독 생성은 고유 제약 위반이 된다.
 - **로그인 오류 문구 차이**: 존재하지 않는 이메일과 잘못된 비밀번호는 같은 문구를 반환하지만, 비밀번호가 없는 OAuth 전용 계정은 `'비밀번호가 설정되지 않은 계정입니다. OAuth 로그인을 사용하세요.'` 를 반환하고 auth 라우트가 이 문구를 그대로 응답한다. AS-09 는 이 동작을 고정하고 있다. 계정 유형 노출을 허용할지 결정이 필요하다.
-- **새니타이저가 빈 값을 반환할 때 원문 저장**: blog-core 2.1.4 의 `createBlogService` 는 `create`·`update` 에서 `sanitize(data.content) || data.content` 로 저장값을 정한다. 0.2.3 의 `BlogSystemConfig.sanitizeContent` 로 지정한 호스트 새니타이저가 입력 전체를 제거해 `''` 또는 `null` 을 반환하면(예: `<script>alert(1)</script>` 만 있는 본문) 새니타이즈되지 않은 원문이 저장된다. 2026-09-15 설치본으로 저장소 밖 임시 스크립트를 실행해 두 경우 모두 원문이 저장됨을 확인했다. blog-system 테스트(BS-SC-02·03·06)는 빈 값이 아닌 반환값만 사용하므로 이 경로를 드러내지 않는다. blog-core 쪽 폴백 정책 확인이 필요하다(TC-I-007).
+- **새니타이저가 빈 값을 반환할 때 원문 저장 (blog-core 2.1.5 에서 해결)**: blog-core 2.1.4 의 `createBlogService` 는 `create`·`update` 에서 `sanitize(data.content) || data.content` 로 저장값을 정해, 새니타이저가 `''` 또는 `null` 을 반환하면(예: `<script>alert(1)</script>` 만 있는 본문) 원문이 저장되었다(2026-09-15 개발 lockfile 의 2.1.4 로 확인). blog-core 2.1.5(`b47b2f7`)가 `sanitize(data.content) ?? ''` 로 고쳤다. 남은 일은 두 가지다: 이 저장소의 개발 lockfile 을 blog-core 2.1.5 로 올리는 것, 그리고 BS-SC 테스트(빈 값이 아닌 반환값만 사용)에 빈 값 반환 케이스를 추가하는 것이다(TC-I-007).
 
 ---
 
