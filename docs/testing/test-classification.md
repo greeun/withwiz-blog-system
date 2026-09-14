@@ -1,24 +1,32 @@
 # @withwiz/blog-system 테스트 분류 체계
 
-> 작성일: 2026-09-13. 이 문서는 `tests/spec.md`(구현 작업 계획서)를 대신하는 현행 분류 문서이다. 모든 수치와 케이스는 기준 커밋에서 테스트를 실행하고 코드를 읽어 확인한 값만 기재했다.
+> 작성일: 2026-09-13. 갱신일: 2026-09-15 (0.2.3 기준). 이 문서는 `tests/spec.md`(구현 작업 계획서)를 대신하는 현행 분류 문서이다. 모든 수치와 케이스는 기준 커밋에서 테스트를 실행하고 코드를 읽어 확인한 값만 기재했다.
 
 ## 개요
 
 | 항목 | 내용 |
 |------|------|
-| 대상 | `@withwiz/blog-system` 0.2.1: 단일·멀티 테넌트 블로그 SaaS 프레임워크 |
-| 범위 | `src/` 전체(core/, tenant/, auth/, billing/, onboarding/, routes/, admin/, validators/, types/)와 `tests/` 아래 테스트 파일 33개 |
-| 기준 커밋 | `52d72e1` fix(routes): 상태 코드가 없는 예외를 toolkit 오류 처리기로 넘긴다 |
+| 대상 | `@withwiz/blog-system` 0.2.3: 단일·멀티 테넌트 블로그 SaaS 프레임워크 |
+| 범위 | `src/` 전체(core/, tenant/, auth/, billing/, onboarding/, routes/, admin/, validators/, types/)와 `tests/` 아래 테스트 파일 34개 |
+| 기준 커밋 | `35a6d75` chore(release): 0.2.3 (develop, 게시본 0.2.3). 초판 기준은 `52d72e1` 이다 |
 | 환경 | Vitest 3.2.7, Node.js 22.22.0, pnpm 11.10.0. 테스트 환경은 `node`(vitest.config.ts 에 `environment` 미지정) |
-| 주요 설치본 | `@withwiz/toolkit` 0.13.0, `@withwiz/blog-core` 2.1.2, `next` 16.3.4, `react` 19.3.0, `zod` 4.6.2, `stripe` 17.7.0 |
+| 의존 선언 | dependencies `@withwiz/blog-core` `^2.1.4`, devDependencies `@withwiz/toolkit` `^0.15.0`(peerDependencies 는 `>=0.11.0`). `pnpm-workspace.yaml` 의 `minimumReleaseAgeExclude` 에 `@withwiz/blog-core@2.1.4`, `@withwiz/toolkit@0.15.0` 명시 |
+| 주요 설치본 | `@withwiz/toolkit` 0.15.0, `@withwiz/blog-core` 2.1.4(peer 해석으로 `@aws-sdk/client-s3` 3.1131.0 동반), `next` 16.3.4, `react` 19.3.0, `zod` 4.6.2, `stripe` 17.7.0 (`pnpm install --frozen-lockfile` 기준) |
 | 수집 규칙 | `tests/**/*.test.ts` 만 수집(`.tsx` 테스트는 수집 대상이 아님), `setupFiles` 없음 |
 | 렌더링 인프라 | 없음. jsdom·happy-dom·@testing-library 가 devDependencies 와 node_modules 에 존재하지 않음 |
 | 목표 커버리지 | 미설정. vitest.config.ts 에 coverage 설정이 없고 `@vitest/coverage-*` 패키지도 설치되어 있지 않아 커버리지는 실측하지 못했다 |
-| 실측 결과 | 파일 33개, 테스트 311개: 통과 311, 실패 0, 스킵 0 (`pnpm exec vitest run --reporter=json`, 2026-09-13) |
+| 실측 결과 | 파일 34개, 테스트 318개: 통과 318, 실패 0, 스킵 0 (`pnpm exec vitest run --reporter=json`, 2026-09-15). `pnpm test` 결과도 같다 |
+
+### 문서 갱신 이력
+
+| 날짜 | 기준 | 실측 | 반영한 변경 |
+|------|------|------|-----------|
+| 2026-09-13 | `52d72e1` (package.json 버전 0.2.1) | 33개 파일, 311건 | 초판 |
+| 2026-09-15 | `35a6d75` (0.2.3) | 34개 파일, 318건 | `418cf97` 0.2.2 릴리즈(버전만 변경, `52d72e1` 의 오류 처리 변경을 게시), `7b2a048` blog-core 2.1.4·toolkit 0.15.0 의존 갱신(`@aws-sdk/client-s3` 3.1130.0 → 3.1131.0 동반), `46a004a` `BlogSystemConfig.sanitizeContent` 추가와 blog-core 서비스 전달(0.2.3). 새 테스트 `tests/blog-system-sanitize-content.test.ts` 7건을 SC-I-006, TC-I-007·TC-I-008 로 추가 |
 
 ### 분류 기준
 
-테스트 파일은 `tests/` 루트(21개), `tests/unit/`(5개), `tests/integration/`(7개)에 나뉘어 있지만 디렉터리 이름이 검증 성격과 일치하지 않는다. 따라서 이 문서는 파일 위치 대신 검증 대상과 검증 방식에 따라 도메인을 정한다.
+테스트 파일은 `tests/` 루트(22개), `tests/unit/`(5개), `tests/integration/`(7개)에 나뉘어 있지만 디렉터리 이름이 검증 성격과 일치하지 않는다. 따라서 이 문서는 파일 위치 대신 검증 대상과 검증 방식에 따라 도메인을 정한다.
 
 - **Unit**: 서비스·검증기·헬퍼 함수를 Prisma·Stripe·toolkit 모킹으로 검증하는 파일
 - **Integration**: `createBlogSystem` 이나 온보딩 서비스처럼 여러 모듈을 조립하는 경로를 검증하는 파일
@@ -54,6 +62,7 @@
 | SC-I-003 | single 모드 features 조합별 조립 | Integration | Medium | 🔲 계획 |
 | SC-I-004 | multi 모드 미들웨어 노출 | Integration | Medium | 🔲 계획 |
 | SC-I-005 | 온보딩 부분 실패 처리 | Integration | Medium | 🔲 계획 |
+| SC-I-006 | 호스트 지정 본문 새니타이저의 blog-core 서비스 전달 | Integration | High | ✅ 완료 |
 | SC-A-001 | 라우트 오류 상태 코드 보존과 toolkit 위임 | API | Critical | ✅ 완료 |
 | SC-A-002 | 블로그 게시글 공개·관리자 라우트 | API | High | ✅ 완료 |
 | SC-A-003 | 태그 라우트 | API | Medium | ✅ 완료 |
@@ -683,13 +692,14 @@ pnpm exec vitest run \
 
 ## 2. Integration Tests (통합 테스트)
 
-**목적:** 여러 모듈을 조립하는 경로를 검증한다. `createBlogSystem` 이 모드와 설정에 따라 어떤 서비스·라우트·미들웨어를 만드는지, 온보딩 서비스가 테넌트·멤버십·게시글 서비스를 어떤 순서와 인자로 호출하는지를 확인한다. blog-core 서비스 팩토리와 Stripe, toolkit 인증 모듈은 모킹한다.
+**목적:** 여러 모듈을 조립하는 경로를 검증한다. `createBlogSystem` 이 모드와 설정에 따라 어떤 서비스·라우트·미들웨어를 만드는지, 호스트 설정을 blog-core 서비스에 어떻게 전달하는지, 온보딩 서비스가 테넌트·멤버십·게시글 서비스를 어떤 순서와 인자로 호출하는지를 확인한다. blog-core 서비스 팩토리와 Stripe, toolkit 인증 모듈은 모킹한다. 단, `tests/blog-system-sanitize-content.test.ts` 는 `createBlogService` 만 실제 구현을 감싼 spy 로 두어 전달 인자와 저장값을 함께 확인한다.
 
-**실행 명령:** 아래 명령의 실측 결과는 3개 파일, 15개 통과이다.
+**실행 명령:** 아래 명령의 실측 결과는 4개 파일, 22개 통과이다.
 
 ```bash
 pnpm exec vitest run \
   tests/blog-system-factory.test.ts \
+  tests/blog-system-sanitize-content.test.ts \
   tests/integration/blog-system-modes.test.ts \
   tests/integration/onboarding-flow.test.ts
 ```
@@ -737,7 +747,7 @@ pnpm exec vitest run \
 | 4 | BS-SM-04: `createScopedBlogService('tenant-abc')` | 반환 서비스에 `create`, `listPublished` 함수 존재 |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 4개 (현재)
-- **비고:** blog-core 서비스 팩토리가 모킹되어 있어, `createScopedBlogService` 가 `createTenantProxy` 로 감싼 Prisma 를 `createBlogService` 에 전달하는지는 단언하지 않는다.
+- **비고:** blog-core 서비스 팩토리가 모킹되어 있어, `createScopedBlogService` 가 `createTenantProxy` 로 감싼 Prisma 를 `createBlogService` 에 전달하는지는 이 파일에서 단언하지 않는다. 0.2.3 에서 추가된 TC-I-008(BS-SC-06)이 실제 `createBlogService` 의 create·update 저장 인자에 `tenantId 'tenant-a'` 가 들어가는지 확인해 이 경로를 간접 검증한다.
 
 ---
 
@@ -783,6 +793,7 @@ pnpm exec vitest run \
 | 7 | `storage` 지정 | `createBlogService` 두 번째 인자 `storage` 가 같은 객체 |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 0개 (계획)
+- **비고:** 0.2.3 부터 `blogServiceConfig` 는 `modelName`, `enableTags`, `storage`, `sanitizeContent` 4개 항목으로 구성된다. 이 가운데 `sanitizeContent` 와 `modelName` 전달은 TC-I-007·TC-I-008 이 검증한다. `enableTags` 와 `storage`(7번) 전달은 여전히 테스트가 없다.
 
 ---
 
@@ -828,6 +839,63 @@ pnpm exec vitest run \
 
 - **자동화:** 가능 ✅ | **테스트 수:** 0개 (계획)
 - **비고:** 1번은 트랜잭션이 없는 현재 동작을 기록한 것이다. 고아 테넌트를 허용할지 결정이 필요하다.
+
+---
+
+### 본문 새니타이저 전달 공통 전제조건 (TC-I-007 ~ TC-I-008)
+
+두 TC 는 같은 파일 `tests/blog-system-sanitize-content.test.ts` 에 있으며 다음 구성을 공유한다.
+
+1. `@withwiz/blog-core/services` 를 부분 모킹한다. `createBlogService` 는 실제 구현을 감싼 `vi.fn` spy 이고, `createTagService`·`createCommentService`·`createSearchService`·`createSchedulerService` 는 `{}` 를 반환한다.
+2. `@withwiz/toolkit/core/auth`, `@withwiz/toolkit/prisma/auth-adapter`, toolkit wrappers·api-helpers, `@withwiz/blog-core/validators`, `stripe` 는 TC-I-001 과 같은 방식으로 모킹한다.
+3. mock prisma 는 tenant·tenantUser·user·news·subscription·plan·usageRecord delegate 를 가지며, `create`·`update` 는 전달받은 `data` 를 그대로 되돌린다. `$transaction` 은 같은 클라이언트를 콜백에 넘긴다.
+4. `beforeEach` 에서 `createBlogService` spy 호출 기록을 지우고 `console.warn` 을 spy 로 막는다. 테스트 환경에는 `isomorphic-dompurify` 가 없어 blog-core 기본 새니타이저가 정규식 폴백 경고를 남기기 때문이다.
+5. 기본 새니타이저 기대값은 `@withwiz/blog-core/utils` 의 실제 `sanitizeHtmlContent(RAW_CONTENT)` 로 계산한다.
+
+---
+
+### TC-I-007: single 모드 본문 새니타이저 전달과 저장값 적용
+
+| 항목 | 내용 |
+|------|------|
+| **파일** | `tests/blog-system-sanitize-content.test.ts` (describe `single 모드`, BS-SC-01~04) |
+| **대상** | `src/core/blog-system.ts`: `createBlogSystem()` 의 `blogServiceConfig.sanitizeContent` 전달 → blog-core `createBlogService().create`·`update` / `src/types/system.ts`: `BlogSystemConfig.sanitizeContent` |
+| **우선순위** | High |
+| **전제조건** | [공통 전제조건](#본문-새니타이저-전달-공통-전제조건-tc-i-007--tc-i-008) 1~5, `mode: 'single'`, `auth.jwtSecret` 32자 이상, `blog.modelName 'news'` |
+| **테스트 데이터** | `RAW_CONTENT = '<p>hello</p><script>alert(1)</script><img src="x" onerror="alert(2)">'`, `HOST_SANITIZED = '<p>host-sanitized</p>'`, 호스트 새니타이저 `vi.fn(() => HOST_SANITIZED)`, `postInput = { title: '제목', slug: 'post-slug', category: 'notice', content: RAW_CONTENT, published: false }`, authorId `'author-1'` |
+
+| # | 단계 | 예상 결과 |
+|---|------|---------|
+| 1 | BS-SC-01: `sanitizeContent` 를 지정해 single 모드 생성 | `createBlogService` 마지막 호출의 두 번째 인자 `sanitizeContent` 가 지정한 함수와 같은 참조, `modelName 'news'` |
+| 2 | BS-SC-02: `blogService.create(postInput, 'author-1')` | 새니타이저가 `RAW_CONTENT` 로 호출됨, `news.create` 1회, 저장 `data.content === HOST_SANITIZED` |
+| 3 | BS-SC-03: `blogService.update('post-1', { content: RAW_CONTENT })` | 새니타이저가 `RAW_CONTENT` 로 호출됨, `news.update` 1회, 저장 `data.content === HOST_SANITIZED` |
+| 4 | BS-SC-04: `sanitizeContent` 미지정으로 생성한 뒤 create·update | 설정의 `sanitizeContent` 가 `undefined`, 기대값 `sanitizeHtmlContent(RAW_CONTENT)` 에 `<script` 없음, create·update 저장 `data.content` 가 모두 이 기대값과 같음 |
+
+- **자동화:** 가능 ✅ | **테스트 수:** 4개 (현재)
+- **비고:** 태그 동기화 분기(`tagIds` 지정 시 `$transaction` 안의 `postTag.createMany`)는 입력에 `tagIds` 가 없어 실행되지 않고, `enableTags`·`storage` 전달은 단언하지 않는다(TC-I-004). blog-core 2.1.4 의 `create`·`update` 는 `sanitize(data.content) || data.content` 로 저장값을 정하므로, 호스트 새니타이저가 빈 문자열이나 `null` 을 반환하면 원문이 저장된다. 이 조합은 테스트하지 않는다. 2026-09-15 설치본 blog-core 2.1.4 의 `createBlogService` 에 `''`·`null` 을 반환하는 새니타이저를 지정해 저장소 밖 임시 스크립트로 확인한 결과 `<script>alert(1)</script>` 원문이 그대로 저장되었다([확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)).
+- **관련 요구사항:** OWASP A03:2021 Injection (저장형 XSS)
+
+---
+
+### TC-I-008: multi 모드 테넌트 스코프 서비스의 본문 새니타이저 전달
+
+| 항목 | 내용 |
+|------|------|
+| **파일** | `tests/blog-system-sanitize-content.test.ts` (describe `multi 모드`, BS-SC-05~07) |
+| **대상** | `src/core/blog-system.ts`: `createScopedBlogService(tenantId)` 가 `createTenantProxy` 로 감싼 Prisma 와 `blogServiceConfig` 로 `createBlogService` 호출 |
+| **우선순위** | High |
+| **전제조건** | [공통 전제조건](#본문-새니타이저-전달-공통-전제조건-tc-i-007--tc-i-008) 1~5, `mode: 'multi'`(domain·billing 미지정), `auth.jwtSecret` 32자 이상, `blog.modelName 'news'` |
+| **테스트 데이터** | TC-I-007 과 같은 `RAW_CONTENT`·`HOST_SANITIZED`·`postInput`, 스코프 테넌트 `'tenant-a'` |
+
+| # | 단계 | 예상 결과 |
+|---|------|---------|
+| 1 | BS-SC-05: `sanitizeContent` 를 지정해 multi 모드 생성 후 `createScopedBlogService('tenant-a')` | `createBlogService` 마지막 호출의 두 번째 인자 `sanitizeContent` 가 지정한 함수와 같은 참조, `modelName 'news'` |
+| 2 | BS-SC-06: 스코프 서비스로 create 와 `update('post-1', { content: RAW_CONTENT })` | 새니타이저 2회 호출(인자 `RAW_CONTENT`), create 저장 `data.content === HOST_SANITIZED` 이고 `data.tenantId === 'tenant-a'`, update 저장 `data.content === HOST_SANITIZED` 이고 `where.tenantId === 'tenant-a'` |
+| 3 | BS-SC-07: `sanitizeContent` 미지정으로 multi 모드 생성 후 스코프 서비스로 create·update | 설정의 `sanitizeContent` 가 `undefined`, create·update 저장 `data.content` 가 모두 `sanitizeHtmlContent(RAW_CONTENT)` 결과와 같음 |
+
+- **자동화:** 가능 ✅ | **테스트 수:** 3개 (현재)
+- **비고:** 2번은 새니타이저 적용 뒤에도 테넌트 격리(tenantId 주입)가 유지되는지를 함께 단언하며, TC-I-002 비고의 미검증 경로를 간접 검증한다. multi 모드에서 `createBlogSystem` 이 만드는 `onboardingService` 와 블로그 라우트(`multiTenantConfig.createScopedService`)도 같은 `createScopedBlogService` 를 사용하므로 코드상 같은 새니타이저가 적용된다. 온보딩·라우트를 경유한 적용은 테스트하지 않는다(TC-S-008, TC-A-015).
+- **관련 요구사항:** OWASP A03:2021 Injection (저장형 XSS)
 
 ---
 
@@ -908,8 +976,8 @@ pnpm exec vitest run \
 | 5 | BS-ERR-14: Prisma 형태 오류 2종 | 각각 같은 객체로 reject (감싸거나 복제하지 않음) |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 5개 (현재)
-- **명세 변경 이력:** 2026-09-13 커밋 `52d72e1` 이전(0.2.1)에는 래퍼가 상태 코드 없는 예외를 직접 500 과 일반 메시지로 응답했고, BS-ERR-06~09 는 500 응답과 내부 메시지(`hunter2`, `ECONNREFUSED`) 미노출을 단언했다. 현재 명세는 원본 재던짐을 단언하며, 내부 정보 은닉은 toolkit 오류 처리 미들웨어의 책임으로 옮겨졌다. BS-ERR-14 는 같은 커밋에서 추가되었다.
-- **비고:** toolkit 이 재던져진 예외를 실제로 어떤 상태 코드로 분류하는지(P2002 → 409 등)는 이 파일이 검증하지 않는다. 커밋 `52d72e1` 메시지는 toolkit 0.15.0 의 분류를 근거로 들지만, 이 저장소의 devDependency 설치본은 `@withwiz/toolkit` 0.13.0 이다.
+- **명세 변경 이력:** 2026-09-13 커밋 `52d72e1` 이전(0.2.1)에는 래퍼가 상태 코드 없는 예외를 직접 500 과 일반 메시지로 응답했고, BS-ERR-06~09 는 500 응답과 내부 메시지(`hunter2`, `ECONNREFUSED`) 미노출을 단언했다. 현재 명세는 원본 재던짐을 단언하며, 내부 정보 은닉은 toolkit 오류 처리 미들웨어의 책임으로 옮겨졌다. BS-ERR-14 는 같은 커밋에서 추가되었다. 이 변경은 0.2.2(`418cf97`)로 게시되었다.
+- **비고:** toolkit 이 재던져진 예외를 실제로 어떤 상태 코드로 분류하는지(P2002 → 409 등)는 이 파일이 검증하지 않는다(wrappers 가 통과형으로 모킹됨). 커밋 `52d72e1` 메시지는 toolkit 0.15.0 의 분류를 근거로 들며, `7b2a048` 이후 이 저장소의 devDependency 설치본도 `@withwiz/toolkit` 0.15.0 이다. 설치본 dist 의 Prisma 오류 매핑에 `P2002` → 상태 409 가 있는 것은 확인했으나 테스트로 고정되지는 않았다.
 
 ---
 
@@ -1472,7 +1540,7 @@ pnpm exec vitest run \
 | 6 | `proxy.$transaction([p1, p2])` (배열형) | 배열을 콜백으로 호출하므로 TypeError 로 reject |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 0개 (계획)
-- **비고:** 1·2번은 현재 보장되는 동작을 고정하는 회귀 테스트이고, 3~6번은 격리가 적용되지 않는 경로를 기록한다. 설치본 blog-core 2.1.2 의 `createBlogService` 는 태그 동기화 시 `$transaction` 안에서 `postTag.createMany` 와 `postTag.deleteMany` 를 호출한다. 스코프 프록시에서 `createMany` 에는 tenantId 가 주입되지 않고 `deleteMany` 에는 주입되므로, 호스트 `postTag` 모델에 tenantId 컬럼이 있는지에 따라 결과가 달라진다. 결함 여부 판단을 위해 확인이 필요하다.
+- **비고:** 1·2번은 현재 보장되는 동작을 고정하는 회귀 테스트이고, 3~6번은 격리가 적용되지 않는 경로를 기록한다. 설치본 blog-core 2.1.4 의 `createBlogService` 는 태그 동기화 시 `$transaction` 안에서 `postTag.createMany` 와 `postTag.deleteMany` 를 호출한다. 스코프 프록시에서 `createMany` 에는 tenantId 가 주입되지 않고 `deleteMany` 에는 주입되므로, 호스트 `postTag` 모델에 tenantId 컬럼이 있는지에 따라 결과가 달라진다. 결함 여부 판단을 위해 확인이 필요하다.
 - **관련 요구사항:** OWASP A01:2021 Broken Access Control
 
 ---
@@ -1567,7 +1635,7 @@ pnpm exec vitest run \
 | 3 | 슈퍼 관리자 `onboarding.create.POST` 경유 | tenantName 형식 검증 없이 `onboardTenant` 에 전달 |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 0개 (계획)
-- **비고:** 설치본 blog-core 2.1.2 의 `createBlogService.create` 는 content 에 `sanitizeHtmlContent` 를 적용하되 결과가 빈 문자열이면 원문을 사용한다(`sanitize(data.content) || data.content`). 새니타이저가 `onerror` 속성을 제거하는지와 title·excerpt 출력 시 이스케이프 여부는 blog-core 와 호스트 범위이므로 확인이 필요하다.
+- **비고:** 설치본 blog-core 2.1.4 의 `createBlogService.create` 는 content 에 새니타이저(`config.sanitizeContent ?? sanitizeHtmlContent`)를 적용하되 결과가 빈 문자열이나 `null` 이면 원문을 사용한다(`sanitize(data.content) || data.content`). 0.2.3 부터 호스트가 `BlogSystemConfig.sanitizeContent` 를 지정하면 `createBlogSystem` 이 만든 `onboardingService` 의 샘플 게시글에도 같은 새니타이저가 적용된다(코드 경로 `createScopedBlogService`, 전달 자체는 TC-I-008 이 검증). 새니타이저가 `onerror` 속성을 제거하는지와 title·excerpt 출력 시 이스케이프 여부는 blog-core 와 호스트 범위이므로 확인이 필요하다.
 - **관련 요구사항:** OWASP A03:2021 Injection
 
 ---
@@ -1741,7 +1809,7 @@ pnpm exec vitest run \
 | 유형 | 현재 파일 수 | 현재 테스트 수 | SC 수 (완료/계획) | TC 수 (완료/계획) | 계획 신규 파일 수 |
 |------|------------|-------------|-----------------|-----------------|----------------|
 | **Unit** | 16개 | 163개 | 16 (12/4) | 24 (16/8) | +8개 |
-| **Integration** | 3개 | 15개 | 5 (2/3) | 6 (3/3) | +3개 |
+| **Integration** | 4개 | 22개 | 6 (3/3) | 8 (5/3) | +3개 |
 | **API** | 11개 | 91개 | 16 (10/6) | 19 (13/6) | +6개 |
 | **E2E** | 0개 | 0개 | 2 (0/2) | 2 (0/2) | +2개 |
 | **Security** | 3개 | 42개 | 8 (3/5) | 8 (3/5) | +5개 |
@@ -1750,10 +1818,11 @@ pnpm exec vitest run \
 | **Smoke** | 0개 | 0개 | 2 (0/2) | 2 (0/2) | +2개 |
 | **Load/Stress** | 0개 | 0개 | 0 | 0 | 없음 |
 | **Chaos** | 0개 | 0개 | 0 | 0 | 없음 |
-| **합계** | **33개** | **311개** | **53 (27/26)** | **65 (35/30)** | **+30개** |
+| **합계** | **34개** | **318개** | **54 (28/26)** | **67 (37/30)** | **+30개** |
 
 - 계획 TC 의 테스트 수는 추측하지 않고 0개로 기재했다. 구현 후 실측값으로 갱신한다.
-- 파일 누락 대조: `find tests -name "*.test.ts"` 결과 33개와 이 문서의 도메인별 실행 명령에 포함된 파일 33개를 비교한 결과, 누락 0개와 중복 배정 0개를 확인했다. 도메인별 실행 결과의 합(163 + 15 + 91 + 42)도 전체 실행 결과 311과 일치한다.
+- 파일 누락 대조: `find tests -name "*.test.ts"` 결과 34개와 이 문서의 도메인별 실행 명령에 포함된 파일 34개를 비교한 결과, 누락 0개와 중복 배정 0개를 확인했다. 도메인별 실행 결과의 합(163 + 22 + 91 + 42)도 전체 실행 결과 318과 일치한다(2026-09-15 실측).
+- 2026-09-15 갱신에서 🔲 계획 TC 가운데 새 테스트로 완료된 항목은 없다. `tests/blog-system-sanitize-content.test.ts` 는 기존 계획 TC 의 단계와 겹치지 않아 SC-I-006, TC-I-007·TC-I-008 을 새로 추가했다. 완료 TC 35개는 모두 실제 테스트 파일과 기존 ID 가 존재하고 테스트 수가 실측과 일치함을 다시 대조했다.
 
 ---
 
@@ -1782,6 +1851,8 @@ pnpm exec vitest run \
 | BS-BF-01~07 | `tests/blog-system-factory.test.ts` | 7 | TC-I-001 | SC-I-001 | Task 15 |
 | BS-SM-01~04 | `tests/integration/blog-system-modes.test.ts` | 4 | TC-I-002 | SC-I-001 | 미수록 |
 | BS-OB-01~04 ② | `tests/integration/onboarding-flow.test.ts` | 4 | TC-I-003 | SC-I-002 | 미수록 |
+| BS-SC-01~04 ③ | `tests/blog-system-sanitize-content.test.ts` (describe `single 모드`) | 4 | TC-I-007 | SC-I-006 | 미수록 |
+| BS-SC-05~07 ③ | `tests/blog-system-sanitize-content.test.ts` (describe `multi 모드`) | 3 | TC-I-008 | SC-I-006 | 미수록 |
 | BS-ERR-01~05, 10 | `tests/route-error.test.ts` | 6 | TC-A-001 | SC-A-001 | 미수록 |
 | BS-ERR-06~09, 14 | `tests/route-error.test.ts` | 5 | TC-A-002 | SC-A-001 | 미수록 |
 | BS-ERR-11~13 | `tests/route-error.test.ts` | 3 | TC-A-003 | SC-A-001 | 미수록 |
@@ -1798,16 +1869,17 @@ pnpm exec vitest run \
 | BS-TP-01~19 | `tests/tenant-proxy.test.ts` | 19 | TC-S-001 | SC-S-001 | Task 2 (01~14 만 수록) |
 | RBAC-01~18 | `tests/unit/rbac-edge-cases.test.ts` | 18 | TC-S-002 | SC-S-002 | 미수록 |
 | BS-RM-01, 02, 03, 03b, 04 | `tests/role-middleware.test.ts` | 5 | TC-S-003 | SC-S-003 | Task 9 (03b 미수록) |
-| **합계** | 33개 파일 | **311** | 35 | 27 | |
+| **합계** | 34개 파일 | **318** | 37 | 28 | |
 
 ### ID 체계 불일치 사항
 
 - **ID 충돌 ①**: `BS-TR` 접두어가 3개 파일에서 서로 다른 대상에 쓰인다. tenant-resolver(01~09), tag-routes(01~07), integration/tenant-routes(01~10)이며, `tests/spec.md` 는 BS-TR 을 tenant-resolver 로 정의한다.
 - **ID 충돌 ②**: `BS-OB-01~04` 가 onboarding-service 와 integration/onboarding-flow 에 모두 존재하며 케이스 내용이 서로 다르다.
-- **ID 체계 혼재**: `BS-XX-nn`(28개 파일), `AS-nn`(auth-service), `RBAC-nn`(rbac-edge-cases) 세 체계가 공존하고, `tests/unit/` 의 billing-service·plan-service·webhook-handler 3개 파일에는 ID 가 없다.
+- **표기 유사 ③**: 0.2.3 에서 추가된 `BS-SC-01~07` 은 다른 파일과 충돌하지 않지만, 이 문서의 시나리오 ID(`SC-U-…`, `SC-I-…` 등)와 표기가 비슷하다. `BS-SC-nn` 은 테스트 이름의 기존 ID 이고 이 문서의 시나리오는 SC-I-006 이다.
+- **ID 체계 혼재**: `BS-XX-nn`(29개 파일), `AS-nn`(auth-service), `RBAC-nn`(rbac-edge-cases) 세 체계가 공존하고, `tests/unit/` 의 billing-service·plan-service·webhook-handler 3개 파일에는 ID 가 없다.
 - **파일 머리말 수치 차이**: tenant-proxy 머리말은 "(14건)"이지만 실제 19건, role-middleware 머리말은 "(4건)"이지만 실제 5건이다. spec.md Task 17 커밋 문구는 "5건"이지만 표와 실제 테스트는 6건이다.
 - **기대값 차이**: spec.md 는 BS-BH-06 을 "api_calls → 10000 (또는 기본값)"으로 적었으나 테스트와 코드는 `Number.MAX_SAFE_INTEGER` 이다. spec.md 는 BS-DS-01 을 "token 없음 → null"로 적었으나 테스트는 `checkVerification` 예외를 단언한다.
-- **spec.md 전제 차이**: spec.md 는 모노레포 경로(`packages/blog-system/…`), `--project blog-system`, `setupFiles` 등록을 전제로 하지만 현재 저장소는 단일 패키지이고 `vitest.config.ts` 에 projects·setupFiles 가 없다. Definition of Done 의 "~148건 이상"과 달리 실측은 311건이다.
+- **spec.md 전제 차이**: spec.md 는 모노레포 경로(`packages/blog-system/…`), `--project blog-system`, `setupFiles` 등록을 전제로 하지만 현재 저장소는 단일 패키지이고 `vitest.config.ts` 에 projects·setupFiles 가 없다. Definition of Done 의 "~148건 이상"과 달리 실측은 318건이다(초판 기준 311건).
 
 ---
 
@@ -1819,7 +1891,7 @@ pnpm exec vitest run \
 |--------|--------------|----------------|---------------|------------|
 | Unit | 적용 | 서비스·검증기·헬퍼가 `create*` 팩토리로 분리되어 Prisma delegate 모킹만으로 검증할 수 있다 | 16 / 163 | SC-U-001~016 |
 | API | 적용 | 라우트 9종이 `create*Routes` 팩토리로 핸들러를 반환하므로(scheduler 라우트는 blog-core 재export) Request 기반 계약 검증이 가능하다 | 11 / 91 | SC-A-001~016 |
-| Integration | 적용 | `createBlogSystem` 이 mode·billing·domain·features 설정에 따라 서비스·라우트·미들웨어를 조립하는 분기가 있다 | 3 / 15 | SC-I-001~005 |
+| Integration | 적용 | `createBlogSystem` 이 mode·billing·domain·features 설정에 따라 서비스·라우트·미들웨어를 조립하는 분기가 있고, `storage`·`sanitizeContent` 같은 호스트 설정을 blog-core 서비스에 전달한다 | 4 / 22 | SC-I-001~006 |
 | E2E | 제한적 | 호스트 앱이 없어 브라우저 여정은 범위 밖이며, 동봉된 클라이언트 모듈(OnboardingWizard, createAuthFetch)과 서버 라우트 사이의 계약으로 한정한다 | 0 / 0 | SC-E-001~002 |
 | Security | 적용(우선) | `createTenantProxy` 의 tenantId 주입, `ROLE_LEVELS` 기반 인가, `X-Tenant-Id` 헤더 해석이 멀티 테넌트 격리의 핵심 경로이다 | 3 / 42 | SC-S-001~008 |
 | Accessibility | 적용, 0건 | 관리자 컴포넌트 4종과 OnboardingWizard 를 `./admin`, `./onboarding` 으로 export 하지만 렌더링 인프라와 테스트가 모두 없다 | 0 / 0 | SC-AC-001~003 |
@@ -1935,7 +2007,7 @@ pnpm exec vitest run \
 
 ### 기타 조직 문제
 
-- **디렉터리와 성격 불일치**: `tests/` 루트 21개 파일에 Unit·API·Integration·Security 성격이 섞여 있고, `tests/integration/` 의 라우트 테스트 5개는 루트의 tag-routes·comment-routes 와 같은 수준의 API 테스트이다.
+- **디렉터리와 성격 불일치**: `tests/` 루트 22개 파일에 Unit·API·Integration·Security 성격이 섞여 있고, `tests/integration/` 의 라우트 테스트 5개는 루트의 tag-routes·comment-routes 와 같은 수준의 API 테스트이다.
 - **import 경로 혼재**: `tests/unit/` 5개 중 billing-service·plan-service·webhook-handler 3개는 상대 경로로 소스 파일을 직접 import 한다. 이 방식은 `index.ts` 재export 를 거치지 않으므로 공개 API 경로 누락을 잡지 못한다.
 - **사용되지 않는 setup 파일**: `tests/setup.ts` 는 `vitest.config.ts` 의 `setupFiles` 에 등록되어 있지 않고 어떤 테스트도 import 하지 않는다. 내용도 spec.md Task 0 의 예시와 다르다(`next/server` 모킹 없음).
 - **도메인별 실행 스크립트 부재**: package.json 에 `test`, `test:watch` 만 있다.
@@ -1945,14 +2017,16 @@ pnpm exec vitest run \
 - **참조 스키마와 서비스 코드의 복합 키 이름**: `src/prisma/blog-system.prisma` 의 `TenantUser` 는 `@@unique([userId, tenantId])` 로 정의되어 있어 Prisma 가 생성하는 복합 키 이름은 `userId_tenantId` 가 된다. 반면 `tenant-user-service.ts` 는 모든 조회에서 `tenantId_userId` 를 사용한다. 모든 테스트가 Prisma 를 모킹하므로 이 불일치는 드러나지 않는다. 참조 스키마 파일은 "실제 마이그레이션에 사용되지 않음"으로 표기되어 있으므로 호스트 스키마 기준으로 확인이 필요하다.
 - **참조 스키마의 Subscription.tenantId `@unique`**: `createSubscription` 은 기존 구독 확인 없이 새 레코드를 만들고 `getSubscription` 은 `createdAt` 내림차순으로 최신 1건을 조회한다. 스키마대로라면 같은 테넌트의 두 번째 구독 생성은 고유 제약 위반이 된다.
 - **로그인 오류 문구 차이**: 존재하지 않는 이메일과 잘못된 비밀번호는 같은 문구를 반환하지만, 비밀번호가 없는 OAuth 전용 계정은 `'비밀번호가 설정되지 않은 계정입니다. OAuth 로그인을 사용하세요.'` 를 반환하고 auth 라우트가 이 문구를 그대로 응답한다. AS-09 는 이 동작을 고정하고 있다. 계정 유형 노출을 허용할지 결정이 필요하다.
+- **새니타이저가 빈 값을 반환할 때 원문 저장**: blog-core 2.1.4 의 `createBlogService` 는 `create`·`update` 에서 `sanitize(data.content) || data.content` 로 저장값을 정한다. 0.2.3 의 `BlogSystemConfig.sanitizeContent` 로 지정한 호스트 새니타이저가 입력 전체를 제거해 `''` 또는 `null` 을 반환하면(예: `<script>alert(1)</script>` 만 있는 본문) 새니타이즈되지 않은 원문이 저장된다. 2026-09-15 설치본으로 저장소 밖 임시 스크립트를 실행해 두 경우 모두 원문이 저장됨을 확인했다. blog-system 테스트(BS-SC-02·03·06)는 빈 값이 아닌 반환값만 사용하므로 이 경로를 드러내지 않는다. blog-core 쪽 폴백 정책 확인이 필요하다(TC-I-007).
 
 ---
 
 ## 리뷰 체크리스트
 
 - [x] 10개 도메인의 적용성을 판정하고 근거를 기록
-- [x] 모든 테스트 파일(33개)을 TC 에 배정하고 누락 0개 확인
-- [x] 도메인별 실행 명령의 실측 합계가 전체 실행 결과(311건)와 일치
+- [x] 모든 테스트 파일(34개)을 TC 에 배정하고 누락 0개 확인
+- [x] 도메인별 실행 명령의 실측 합계가 전체 실행 결과(318건)와 일치
+- [x] 0.2.2~0.2.3 변경(의존 갱신, `sanitizeContent` 전달)을 반영하고 새 테스트를 SC-I-006, TC-I-007·TC-I-008 로 배정
 - [x] 완료 TC 의 단계·예상 결과를 실제 `it()` 이름과 단언에서 작성
 - [x] 계획 TC 의 단계·예상 결과를 대상 소스 코드 동작에 근거해 작성
 - [x] 기존 ID(`BS-XX-nn`, `AS-nn`, `RBAC-nn`) 전체와 새 SC/TC ID 매핑
