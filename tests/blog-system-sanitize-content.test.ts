@@ -233,6 +233,35 @@ describe('createBlogSystem — 본문 새니타이저 전달', () => {
       expect(prisma.news.create.mock.calls[0][0].data.content).toBe(expected);
       expect(prisma.news.update.mock.calls[0][0].data.content).toBe(expected);
     });
+
+    // 새니타이저가 본문 전체를 제거하면(예: <script> 만 있는 본문) 원문으로 되돌아가지 않고
+    // 빈 본문이 저장되어야 한다. blog-core 2.1.5 부터 보장된다.
+    const SCRIPT_ONLY = '<script>alert(1)</script>';
+
+    it('BS-SC-08: 새니타이저가 빈 문자열을 반환하면 create·update 에 원문 대신 빈 본문을 저장한다', async () => {
+      const sanitizeContent = vi.fn(() => '');
+      const system = createSingle(sanitizeContent);
+
+      await system.blogService!.create({ ...postInput, content: SCRIPT_ONLY }, 'author-1');
+      await system.blogService!.update('post-1', { content: SCRIPT_ONLY } as any);
+
+      expect(sanitizeContent).toHaveBeenCalledTimes(2);
+      expect(sanitizeContent).toHaveBeenCalledWith(SCRIPT_ONLY);
+      expect(prisma.news.create.mock.calls[0][0].data.content).toBe('');
+      expect(prisma.news.update.mock.calls[0][0].data.content).toBe('');
+    });
+
+    it('BS-SC-09: 새니타이저가 null 을 반환하면 create·update 에 원문 대신 빈 본문을 저장한다', async () => {
+      const sanitizeContent = vi.fn(() => null);
+      const system = createSingle(sanitizeContent);
+
+      await system.blogService!.create({ ...postInput, content: SCRIPT_ONLY }, 'author-1');
+      await system.blogService!.update('post-1', { content: SCRIPT_ONLY } as any);
+
+      expect(sanitizeContent).toHaveBeenCalledTimes(2);
+      expect(prisma.news.create.mock.calls[0][0].data.content).toBe('');
+      expect(prisma.news.update.mock.calls[0][0].data.content).toBe('');
+    });
   });
 
   // ── multi 모드 ──
