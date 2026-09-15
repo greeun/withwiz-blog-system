@@ -30,7 +30,18 @@ export interface AuthService {
 
   refreshToken(refreshToken: string): Promise<TokenPair>;
 
-  getOAuthLoginUrl(provider: 'google' | 'github'): string;
+  /**
+   * 공급자 로그인 URL 을 만든다.
+   * `state` 는 CSRF 방어용 값이며, 호출자가 같은 값을 httpOnly 쿠키 등에 저장하고 콜백에서 대조해야 한다.
+   * 생략하면 임의 값을 만들지만 호출자가 알 수 없으므로 콜백 대조에 실패한다(`createAuthRoutes` 는 항상 전달한다).
+   */
+  getOAuthLoginUrl(provider: 'google' | 'github', state?: string): string;
+
+  /**
+   * 공급자 인증 코드를 교환해 로그인한다.
+   * state 대조는 요청 쿠키에 접근하는 라우트 계층의 책임이다(`createAuthRoutes` 의 oauth.callback).
+   * 공급자가 이메일 인증을 확인하지 않은 계정은 같은 이메일의 기존 계정에 연결하지 않는다.
+   */
 
   handleOAuthCallback(
     provider: string,
@@ -70,6 +81,16 @@ interface UserPasswordDelegate {
     where: { id: string };
     select: { password: true };
   }): Promise<{ password: string | null } | null>;
+}
+
+const SUPPORTED_OAUTH_PROVIDERS = ['google', 'github'] as const;
+type SupportedOAuthProvider = (typeof SUPPORTED_OAUTH_PROVIDERS)[number];
+
+function toSupportedProvider(provider: string): SupportedOAuthProvider {
+  if (!(SUPPORTED_OAUTH_PROVIDERS as readonly string[]).includes(provider)) {
+    throw new Error(`지원하지 않는 OAuth 프로바이더: ${provider}`);
+  }
+  return provider as SupportedOAuthProvider;
 }
 
 const noopLogger: Logger = {
@@ -165,15 +186,15 @@ export function createAuthService(
       return jwtService.createTokenPair({ ...user, role: user.role ?? 'USER' });
     },
 
-    getOAuthLoginUrl(provider) {
+    getOAuthLoginUrl(provider, state) {
       if (!oauthManager) {
         throw new Error('OAuth가 설정되지 않았습니다.');
       }
-      const oauthProvider =
-        provider === 'google' ? 'google' : 'github';
-      // state 파라미터는 CSRF 방어용 — 실제 구현에서 세션 기반으로 개선 필요
-      const state = TokenGenerator.generateUrlSafe(16);
-      return oauthManager.getLoginUrl(oauthProvider, state);
+      const oauthProvider = toSupportedProvider(provider);
+      return oauthManager.getLoginUrl(
+        oauthProvider,
+        state || TokenGenerator.generateUrlSafe(16),
+      );
     },
 
     async handleOAuthCallback(provider, code) {
@@ -181,8 +202,7 @@ export function createAuthService(
         throw new Error('OAuth가 설정되지 않았습니다.');
       }
 
-      const oauthProvider =
-        provider === 'google' ? 'google' : 'github';
+      const oauthProvider = toSupportedProvider(provider);
 
       const oauthAccessToken = await oauthManager.exchangeCodeForToken(
         oauthProvider,
@@ -212,6 +232,13 @@ export function createAuthService(
       } else {
         const existingUser = await userRepo.findByEmail(userInfo.email);
         if (existingUser) {
+          // 공급자가 이메일 소유를 확인하지 않았다면 같은 이메일로 만든 공급자 계정이
+          // 기존 계정을 차지할 수 있으므로 자동 연결하지 않는다.
+          if (userInfo.emailVerified !== true) {
+            throw new Error(
+              '공급자가 이메일 인증을 확인하지 않은 OAuth 계정은 기존 계정에 연결할 수 없습니다.',
+            );
+          }
           user = existingUser;
         } else {
           user = await userRepo.create({
