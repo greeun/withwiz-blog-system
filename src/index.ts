@@ -55,6 +55,7 @@ export { createTenantResolver } from './tenant';
 export type { TenantResolver } from './tenant';
 export {
   resolveTenantFromRequest,
+  createTenantResolutionMiddleware,
   TENANT_ID_HEADER,
   TENANT_SLUG_HEADER,
 } from './tenant';
