@@ -1,5 +1,5 @@
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - '@withwiz/blog-core@2.1.4'
+  - '@withwiz/blog-core@2.1.5'
   - '@withwiz/toolkit@0.15.0'

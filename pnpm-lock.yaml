@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@withwiz/blog-core':
-        specifier: ^2.1.4
-        version: 2.1.4(@aws-sdk/client-s3@3.1131.0)(@prisma/client@7.10.0(typescript@5.9.3))(@withwiz/block-editor@0.3.0(react@19.3.0))(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(zod@4.6.2)
+        specifier: ^2.1.5
+        version: 2.1.5(@aws-sdk/client-s3@3.1131.0)(@prisma/client@7.10.0(typescript@5.9.3))(@withwiz/block-editor@0.3.0(react@19.3.0))(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(zod@4.6.2)
       stripe:
         specifier: ^17
         version: 17.7.0
@@ -768,8 +768,8 @@ packages:
     peerDependencies:
       react: '>=18.0.0'
 
-  '@withwiz/blog-core@2.1.4':
-    resolution: {integrity: sha512-isvH7pIAw1/5z/yyJErr58eCyq3kPwHobKLNJbFfTxPe8xo4ATR7ZQoIqddYNXb9MQxv8Wc/1RdQnogiyT9Srw==}
+  '@withwiz/blog-core@2.1.5':
+    resolution: {integrity: sha512-eXSm8oZpEHS+VKDroHgmArCkK5ZLcWvYRcPtKqYf3FohG6dIlE8kiW14XWsGLbTo9b5fcGOPB4F546LrlfuPMg==}
     peerDependencies:
       '@aws-sdk/client-s3': '>=3.0.0'
       '@prisma/client': '>=5.0.0'
@@ -2074,7 +2074,7 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  '@withwiz/blog-core@2.1.4(@aws-sdk/client-s3@3.1131.0)(@prisma/client@7.10.0(typescript@5.9.3))(@withwiz/block-editor@0.3.0(react@19.3.0))(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(zod@4.6.2)':
+  '@withwiz/blog-core@2.1.5(@aws-sdk/client-s3@3.1131.0)(@prisma/client@7.10.0(typescript@5.9.3))(@withwiz/block-editor@0.3.0(react@19.3.0))(next@16.3.4(@types/node@22.20.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(zod@4.6.2)':
     dependencies:
       '@prisma/client': 7.10.0(typescript@5.9.3)
       '@withwiz/block-editor': 0.3.0(react@19.3.0)
