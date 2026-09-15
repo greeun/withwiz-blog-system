@@ -7,14 +7,29 @@ import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import type { BillingService } from '../billing/billing-service';
 import type { PlanService } from '../billing/plan-service';
 import type { RouteHandlers } from '../types/system';
+import type { TenantUserService } from '../tenant/tenant-user-service';
+import {
+  requireAuthenticatedUser,
+  requireSuperAdmin,
+  requireTenantRole,
+} from './route-authorization';
 
 export interface BillingRoutes extends RouteHandlers {
   [key: string]: (req: Request, ctx?: any) => Promise<Response>;
 }
 
+/**
+ * 과금 라우트.
+ *
+ * - `plans.GET`, `webhook.POST`: 공개 경로 (웹훅은 Stripe 서명으로 검증)
+ * - `checkout`, `portal`, `subscription`, `usage`: 요청의 `tenantId` 테넌트에 ADMIN 이상 역할로
+ *   소속된 사용자만 호출할 수 있다. `tenantUserService` 를 전달하지 않으면 403 으로 거부한다.
+ * - `adminPlans`: 요금제 관리는 플랫폼 수준 작업이므로 SUPER_ADMIN 만 호출할 수 있다.
+ */
 export function createBillingRoutes(
   billingService: BillingService,
   planService: PlanService,
+  tenantUserService?: TenantUserService,
 ) {
   return {
     plans: {
@@ -26,6 +41,9 @@ export function createBillingRoutes(
 
     checkout: {
       POST: withAdminApi(async (context: IApiContext) => {
+        const unauthenticated = requireAuthenticatedUser(context);
+        if (unauthenticated) return unauthenticated;
+
         const { tenantId, planId, successUrl, cancelUrl } =
           await context.request.json();
 
@@ -38,6 +56,9 @@ export function createBillingRoutes(
             { status: 400 },
           );
         }
+
+        const access = await requireTenantRole(context, tenantUserService, tenantId);
+        if (!access.ok) return access.response;
 
         try {
           const url = await billingService.createCheckoutSession(
@@ -66,6 +87,9 @@ export function createBillingRoutes(
 
     portal: {
       POST: withAdminApi(async (context: IApiContext) => {
+        const unauthenticated = requireAuthenticatedUser(context);
+        if (unauthenticated) return unauthenticated;
+
         const { tenantId, returnUrl } = await context.request.json();
 
         if (!tenantId || !returnUrl) {
@@ -77,6 +101,9 @@ export function createBillingRoutes(
             { status: 400 },
           );
         }
+
+        const access = await requireTenantRole(context, tenantUserService, tenantId);
+        if (!access.ok) return access.response;
 
         try {
           const url = await billingService.createPortalSession(
@@ -103,6 +130,9 @@ export function createBillingRoutes(
 
     subscription: {
       GET: withAdminApi(async (context: IApiContext) => {
+        const unauthenticated = requireAuthenticatedUser(context);
+        if (unauthenticated) return unauthenticated;
+
         const url = new URL(context.request.url);
         const tenantId = url.searchParams.get('tenantId');
 
@@ -115,6 +145,9 @@ export function createBillingRoutes(
             { status: 400 },
           );
         }
+
+        const access = await requireTenantRole(context, tenantUserService, tenantId);
+        if (!access.ok) return access.response;
 
         const subscription = await billingService.getSubscription(tenantId);
         return NextResponse.json({ success: true, data: subscription });
@@ -123,6 +156,9 @@ export function createBillingRoutes(
 
     usage: {
       GET: withAdminApi(async (context: IApiContext) => {
+        const unauthenticated = requireAuthenticatedUser(context);
+        if (unauthenticated) return unauthenticated;
+
         const url = new URL(context.request.url);
         const tenantId = url.searchParams.get('tenantId');
 
@@ -135,6 +171,9 @@ export function createBillingRoutes(
             { status: 400 },
           );
         }
+
+        const access = await requireTenantRole(context, tenantUserService, tenantId);
+        if (!access.ok) return access.response;
 
         const periodParam = url.searchParams.get('period');
         const period = periodParam ? new Date(periodParam) : undefined;
@@ -180,12 +219,18 @@ export function createBillingRoutes(
     },
 
     adminPlans: {
-      GET: withAdminApi(async (_context: IApiContext) => {
+      GET: withAdminApi(async (context: IApiContext) => {
+        const denied = requireSuperAdmin(context);
+        if (denied) return denied;
+
         const plans = await planService.listActive();
         return NextResponse.json({ success: true, data: plans });
       }),
 
       POST: withAdminApi(async (context: IApiContext) => {
+        const denied = requireSuperAdmin(context);
+        if (denied) return denied;
+
         const data = await context.request.json();
 
         if (!data.name || data.maxPosts == null || data.maxStorage == null) {
@@ -221,6 +266,9 @@ export function createBillingRoutes(
       }),
 
       PUT: withAdminApi(async (context: IApiContext) => {
+        const denied = requireSuperAdmin(context);
+        if (denied) return denied;
+
         const { id, ...data } = await context.request.json();
 
         if (!id) {

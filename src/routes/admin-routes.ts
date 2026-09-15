@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAdminApi } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import { isBlogErrorLike, toErrorResponse } from './route-error';
+import { isSuperAdmin } from './route-authorization';
 import {
   parsePagination,
   getSearchParam,
@@ -42,8 +43,7 @@ async function getRouteParam(props: unknown, key: string): Promise<string> {
 // toolkit의 IUser.role은 'USER' | 'ADMIN'이지만,
 // blog-system은 SUPER_ADMIN 역할을 확장하여 사용하므로 문자열 비교로 검증한다.
 function verifySuperAdmin(context: IApiContext): NextResponse | null {
-  const user = context.user;
-  if (!user || (user.role as string) !== SystemRole.SUPER_ADMIN) {
+  if (!isSuperAdmin(context.user)) {
     return NextResponse.json(
       {
         success: false,

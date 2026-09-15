@@ -3,6 +3,10 @@
  *
  * createTenantRoutes()로 생성된 핸들러를 실제 Request 객체로 호출하여
  * Response 상태 코드와 JSON 응답을 검증한다.
+ *
+ * 인가 전제: 요청자 admin-1 은 시스템 역할 SUPER_ADMIN(목록·생성·비활성화)이면서
+ * 테넌트 t-1 의 OWNER(상세·설정·사용자 관리)이다. 거부 경로는
+ * tests/security/admin-route-authorization.test.ts 에서 검증한다.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -91,7 +95,13 @@ function createMockTenantUserService() {
       role: TenantRole.ADMIN,
     }),
     removeUser: vi.fn().mockResolvedValue(undefined),
-    getUserRole: vi.fn(),
+    // admin-1 은 t-1 의 OWNER, u-2 는 EDITOR 구성원이다.
+    getUserRole: vi.fn(async (tenantId: string, userId: string) => {
+      if (tenantId !== 't-1') return null;
+      if (userId === 'admin-1') return TenantRole.OWNER;
+      if (userId === 'u-2') return TenantRole.EDITOR;
+      return null;
+    }),
     getUserTenants: vi.fn(),
     hasPermission: vi.fn(),
   } as any;

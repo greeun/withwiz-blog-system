@@ -212,7 +212,7 @@ export function createBlogSystem(config: BlogSystemConfig): BlogSystem {
 
   const billingRoutes =
     billingService && planService
-      ? createBillingRoutes(billingService, planService)
+      ? createBillingRoutes(billingService, planService, tenantUserService)
       : null;
 
   const domainService = config.domain
@@ -225,7 +225,7 @@ export function createBlogSystem(config: BlogSystemConfig): BlogSystem {
     : null;
 
   const domainRoutes = domainService
-    ? createDomainRoutes(domainService)
+    ? createDomainRoutes(domainService, tenantUserService)
     : null;
 
   async function resolveScopedPrismaFromRequest(
