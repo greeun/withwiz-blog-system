@@ -4,7 +4,49 @@ import {
   withAdminApi,
 } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
+import {
+  OAUTH_STATE_COOKIE,
+  clearOAuthStateCookie,
+  generateOAuthState,
+  setOAuthStateCookie,
+  validateOAuthState,
+} from '@withwiz/toolkit/core/auth/oauth/state-cookie';
 import type { AuthService } from '../auth/auth-service';
+
+const SUPPORTED_OAUTH_PROVIDERS = ['google', 'github'] as const;
+
+function isSupportedProvider(provider: string): provider is 'google' | 'github' {
+  return (SUPPORTED_OAUTH_PROVIDERS as readonly string[]).includes(provider);
+}
+
+function unsupportedProviderResponse(provider: string): NextResponse {
+  return NextResponse.json(
+    {
+      success: false,
+      error: { message: `지원하지 않는 OAuth 프로바이더: ${provider}` },
+    },
+    { status: 400 },
+  );
+}
+
+/** state 쿠키는 HTTPS 요청에서만 Secure 로 설정한다(로컬 HTTP 개발 환경 호환). */
+function stateCookieOptions(request: Request) {
+  return { secure: new URL(request.url).protocol === 'https:' };
+}
+
+function readCookie(request: Request, name: string): string | undefined {
+  const fromNext = (request as { cookies?: { get(n: string): { value: string } | undefined } })
+    .cookies?.get(name)?.value;
+  if (fromNext !== undefined) return fromNext;
+
+  const header = request.headers.get('cookie');
+  if (!header) return undefined;
+  for (const part of header.split(';')) {
+    const [key, ...rest] = part.trim().split('=');
+    if (key === name) return decodeURIComponent(rest.join('='));
+  }
+  return undefined;
+}
 
 export interface AuthRoutes {
   register: { POST: ReturnType<typeof withPublicApi> };
@@ -234,21 +276,19 @@ export function createAuthRoutes(authService: AuthService): AuthRoutes {
         GET: withPublicApi(async (context: IApiContext, props?: unknown) => {
           const provider = await getRouteParam(props, 'provider');
 
-          if (provider !== 'google' && provider !== 'github') {
-            return NextResponse.json(
-              {
-                success: false,
-                error: {
-                  message: `지원하지 않는 OAuth 프로바이더: ${provider}`,
-                },
-              },
-              { status: 400 },
-            );
+          if (!isSupportedProvider(provider)) {
+            return unsupportedProviderResponse(provider);
           }
 
           try {
-            const loginUrl = authService.getOAuthLoginUrl(provider);
-            return NextResponse.redirect(loginUrl);
+            // CSRF 방어: state 를 발급해 httpOnly 쿠키에 저장하고 콜백에서 대조한다.
+            const state = generateOAuthState();
+            const loginUrl = authService.getOAuthLoginUrl(provider, state);
+            return setOAuthStateCookie(
+              NextResponse.redirect(loginUrl),
+              state,
+              stateCookieOptions(context.request),
+            );
           } catch (error) {
             return NextResponse.json(
               {
@@ -269,16 +309,42 @@ export function createAuthRoutes(authService: AuthService): AuthRoutes {
       callback: {
         GET: withPublicApi(async (context: IApiContext, props?: unknown) => {
           const provider = await getRouteParam(props, 'provider');
+          if (!isSupportedProvider(provider)) {
+            return unsupportedProviderResponse(provider);
+          }
+
           const { searchParams } = new URL(context.request.url);
           const code = searchParams.get('code');
+          // state 쿠키는 한 번만 쓰도록 콜백의 모든 응답에서 지운다.
+          const done = (response: NextResponse) =>
+            clearOAuthStateCookie(response, stateCookieOptions(context.request));
 
           if (!code) {
-            return NextResponse.json(
-              {
-                success: false,
-                error: { message: 'OAuth 인증 코드가 없습니다.' },
-              },
-              { status: 400 },
+            return done(
+              NextResponse.json(
+                {
+                  success: false,
+                  error: { message: 'OAuth 인증 코드가 없습니다.' },
+                },
+                { status: 400 },
+              ),
+            );
+          }
+
+          if (
+            !validateOAuthState(
+              readCookie(context.request, OAUTH_STATE_COOKIE),
+              searchParams.get('state'),
+            )
+          ) {
+            return done(
+              NextResponse.json(
+                {
+                  success: false,
+                  error: { message: 'OAuth state 가 유효하지 않습니다.' },
+                },
+                { status: 400 },
+              ),
             );
           }
 
@@ -288,25 +354,29 @@ export function createAuthRoutes(authService: AuthService): AuthRoutes {
               code,
             );
 
-            return NextResponse.json({
-              success: true,
-              data: {
-                user: result.user,
-                tokens: result.tokens,
-              },
-            });
-          } catch (error) {
-            return NextResponse.json(
-              {
-                success: false,
-                error: {
-                  message:
-                    error instanceof Error
-                      ? error.message
-                      : 'OAuth 인증에 실패했습니다.',
+            return done(
+              NextResponse.json({
+                success: true,
+                data: {
+                  user: result.user,
+                  tokens: result.tokens,
                 },
-              },
-              { status: 401 },
+              }),
+            );
+          } catch (error) {
+            return done(
+              NextResponse.json(
+                {
+                  success: false,
+                  error: {
+                    message:
+                      error instanceof Error
+                        ? error.message
+                        : 'OAuth 인증에 실패했습니다.',
+                  },
+                },
+                { status: 401 },
+              ),
             );
           }
         }),
