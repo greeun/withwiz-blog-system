@@ -3,8 +3,13 @@ import type { TApiMiddleware, IApiContext } from '@withwiz/toolkit/next/middlewa
 import type { TenantUserService } from '../tenant/tenant-user-service';
 import { ROLE_LEVELS } from '../tenant/tenant-user-service';
 import type { TenantRole } from '../types/tenant';
-import { TENANT_ID_HEADER } from '../tenant/tenant-middleware';
 
+/**
+ * 요청자가 확정된 테넌트에 `requiredRole` 이상 역할로 소속되어 있는지 확인하는 미들웨어.
+ *
+ * 테넌트는 앞선 서버 측 미들웨어(`createTenantResolutionMiddleware` 등)가 기록한
+ * `context.metadata.tenantId` 만 신뢰한다. `X-Tenant-Id` 같은 요청 헤더는 읽지 않는다.
+ */
 export function createTenantRoleMiddleware(
   tenantUserService: TenantUserService,
   requiredRole: TenantRole,
@@ -24,9 +29,7 @@ export function createTenantRoleMiddleware(
       );
     }
 
-    const tenantId =
-      context.request.headers.get(TENANT_ID_HEADER) ??
-      (context.metadata?.tenantId as string | undefined);
+    const tenantId = context.metadata?.tenantId as string | undefined;
 
     if (!tenantId) {
       return NextResponse.json(

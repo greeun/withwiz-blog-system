@@ -32,15 +32,16 @@ describe('resolveTenantFromRequest', () => {
     resolver = createMockResolver();
   });
 
-  it('BS-TM-01: X-Tenant-Id 헤더 존재 → 슬러그로 조회 우선', async () => {
+  it('BS-TM-01: X-Tenant-Id 헤더가 있어도 슬러그 조회를 하지 않고 호스트명으로 해석', async () => {
     resolver.resolveFromSlug.mockResolvedValue(mockTenant);
     const req = new Request('http://localhost/api/test', {
       headers: { [TENANT_ID_HEADER]: 'my-blog' },
     });
 
     const result = await resolveTenantFromRequest(req, resolver, 'blog.example.com');
-    expect(result).toEqual({ tenantId: 't-1', tenant: mockTenant });
-    expect(resolver.resolveFromSlug).toHaveBeenCalledWith('my-blog');
+    expect(result).toBeNull();
+    expect(resolver.resolveFromSlug).not.toHaveBeenCalled();
+    expect(resolver.resolve).toHaveBeenCalledWith('localhost', 'blog.example.com');
   });
 
   it('BS-TM-02: X-Tenant-Id 헤더 없으면 → 호스트명 기반 resolve', async () => {

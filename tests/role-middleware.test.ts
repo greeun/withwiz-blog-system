@@ -1,5 +1,8 @@
 /**
- * Task 9: role-middleware (createTenantRoleMiddleware) 테스트 (4건)
+ * Task 9: role-middleware (createTenantRoleMiddleware) 테스트 (5건)
+ *
+ * 테넌트는 앞선 미들웨어가 확정한 context.metadata.tenantId 로만 전달한다.
+ * X-Tenant-Id 헤더를 무시하는지는 tests/security/tenant-header-trust.test.ts 에서 검증한다.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { createTenantRoleMiddleware } from '@withwiz/blog-system/auth';
@@ -7,21 +10,15 @@ import { TenantRole } from '@withwiz/blog-system/types';
 
 function createMockContext(overrides: {
   userId?: string;
-  tenantIdHeader?: string;
-  metadata?: Record<string, unknown>;
+  tenantId?: string;
 } = {}) {
-  const headers = new Headers();
-  if (overrides.tenantIdHeader) {
-    headers.set('X-Tenant-Id', overrides.tenantIdHeader);
-  }
-
   return {
     request: {
-      headers,
+      headers: new Headers(),
       url: 'http://localhost/api/test',
     } as unknown as Request,
     user: overrides.userId ? { id: overrides.userId, role: 'ADMIN' } : undefined,
-    metadata: overrides.metadata ?? {},
+    metadata: overrides.tenantId ? { tenantId: overrides.tenantId } : {},
   } as any;
 }
 
@@ -50,7 +47,7 @@ describe('createTenantRoleMiddleware', () => {
     expect(body.success).toBe(false);
   });
 
-  it('BS-RM-02: tenantId 헤더 없음 → 400', async () => {
+  it('BS-RM-02: 확정된 metadata.tenantId 없음 → 400', async () => {
     const mockService = createMockTenantUserService();
     const middleware = createTenantRoleMiddleware(mockService, TenantRole.EDITOR);
     const context = createMockContext({ userId: 'u-1' });
@@ -66,7 +63,7 @@ describe('createTenantRoleMiddleware', () => {
     const mockService = createMockTenantUserService();
     mockService.getUserRole.mockResolvedValue(TenantRole.VIEWER);
     const middleware = createTenantRoleMiddleware(mockService, TenantRole.ADMIN);
-    const context = createMockContext({ userId: 'u-1', tenantIdHeader: 't-1' });
+    const context = createMockContext({ userId: 'u-1', tenantId: 't-1' });
     const next = vi.fn();
 
     const response = await middleware(context, next);
@@ -82,7 +79,7 @@ describe('createTenantRoleMiddleware', () => {
     const mockService = createMockTenantUserService();
     mockService.getUserRole.mockResolvedValue(null);
     const middleware = createTenantRoleMiddleware(mockService, TenantRole.EDITOR);
-    const context = createMockContext({ userId: 'u-1', tenantIdHeader: 't-1' });
+    const context = createMockContext({ userId: 'u-1', tenantId: 't-1' });
     const next = vi.fn();
 
     const response = await middleware(context, next);
@@ -96,7 +93,7 @@ describe('createTenantRoleMiddleware', () => {
     mockService.getUserRole.mockResolvedValue(TenantRole.OWNER);
 
     const middleware = createTenantRoleMiddleware(mockService, TenantRole.EDITOR);
-    const context = createMockContext({ userId: 'u-1', tenantIdHeader: 't-1' });
+    const context = createMockContext({ userId: 'u-1', tenantId: 't-1' });
     const nextResponse = new Response(JSON.stringify({ success: true }), { status: 200 });
     const next = vi.fn().mockResolvedValue(nextResponse);
 

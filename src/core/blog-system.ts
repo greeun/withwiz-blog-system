@@ -32,7 +32,10 @@ import type { SchedulerRoutes } from '../routes/scheduler-routes';
 import { createTenantService } from '../tenant/tenant-service';
 import { createTenantUserService } from '../tenant/tenant-user-service';
 import { createTenantResolver } from '../tenant/tenant-resolver';
-import { resolveTenantFromRequest } from '../tenant/tenant-middleware';
+import {
+  resolveTenantFromRequest,
+  createTenantResolutionMiddleware,
+} from '../tenant/tenant-middleware';
 import { createTenantRoleMiddleware } from '../auth/role-middleware';
 import { createOnboardingService } from '../onboarding/onboarding-service';
 import { createPlanService } from '../billing/plan-service';
@@ -41,6 +44,7 @@ import { createBillingRoutes } from '../routes/billing-routes';
 import { createDomainService } from '../tenant/domain-service';
 import { createDomainRoutes } from '../routes/domain-routes';
 import type { TenantRole } from '../types/tenant';
+import type { TApiMiddleware } from '@withwiz/toolkit/next/middleware/types';
 
 function inferTableName(modelName: string): string {
   return modelName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
@@ -281,8 +285,15 @@ export function createBlogSystem(config: BlogSystemConfig): BlogSystem {
           tenantResolver,
           overrideBaseDomain ?? baseDomain,
         ),
-      requireTenantRole: (_role: TenantRole) =>
-        createTenantRoleMiddleware(tenantUserService, _role),
+      // 호스트명으로 테넌트를 확정한 뒤 역할을 확인한다. 인증 정보가 없으면 역할 미들웨어가 401 로 응답한다.
+      requireTenantRole: (role: TenantRole): TApiMiddleware => {
+        const resolveTenant = createTenantResolutionMiddleware(tenantResolver, baseDomain);
+        const checkRole = createTenantRoleMiddleware(tenantUserService, role);
+        return (context, next) =>
+          context.user?.id
+            ? resolveTenant(context, () => checkRole(context, next))
+            : checkRole(context, next);
+      },
     },
     blogConfig,
     createScopedBlogService,
