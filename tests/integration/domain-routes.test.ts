@@ -15,7 +15,7 @@ const auth = vi.hoisted(() => ({ role: 'ADMIN' }));
 // ── 미들웨어 모킹 ──
 
 vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
-  withAdminApi: vi.fn((handler: any) => {
+  withAuthApi: vi.fn((handler: any) => {
     return (req: Request, props?: unknown) => {
       const context = {
         request: req,

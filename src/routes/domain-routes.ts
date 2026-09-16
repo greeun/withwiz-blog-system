@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withAdminApi } from '@withwiz/toolkit/next/middleware/wrappers';
+import { withAuthApi } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import { parsePagination } from '@withwiz/toolkit/next/utils/api-helpers';
 import type { DomainService } from '../tenant/domain-service';
@@ -11,11 +11,11 @@ import {
 } from './route-authorization';
 
 export interface DomainRoutes {
-  add: { POST: ReturnType<typeof withAdminApi> };
-  verify: { POST: ReturnType<typeof withAdminApi> };
-  status: { GET: ReturnType<typeof withAdminApi> };
-  remove: { DELETE: ReturnType<typeof withAdminApi> };
-  list: { GET: ReturnType<typeof withAdminApi> };
+  add: { POST: ReturnType<typeof withAuthApi> };
+  verify: { POST: ReturnType<typeof withAuthApi> };
+  status: { GET: ReturnType<typeof withAuthApi> };
+  remove: { DELETE: ReturnType<typeof withAuthApi> };
+  list: { GET: ReturnType<typeof withAuthApi> };
 }
 
 async function getRouteParam(props: unknown, key: string): Promise<string> {
@@ -38,7 +38,7 @@ export function createDomainRoutes(
 ): DomainRoutes {
   return {
     add: {
-      POST: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      POST: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const unauthenticated = requireAuthenticatedUser(context);
         if (unauthenticated) return unauthenticated;
 
@@ -112,7 +112,7 @@ export function createDomainRoutes(
     },
 
     verify: {
-      POST: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      POST: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const unauthenticated = requireAuthenticatedUser(context);
         if (unauthenticated) return unauthenticated;
 
@@ -175,7 +175,7 @@ export function createDomainRoutes(
     },
 
     status: {
-      GET: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const unauthenticated = requireAuthenticatedUser(context);
         if (unauthenticated) return unauthenticated;
 
@@ -236,7 +236,7 @@ export function createDomainRoutes(
     },
 
     remove: {
-      DELETE: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      DELETE: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const unauthenticated = requireAuthenticatedUser(context);
         if (unauthenticated) return unauthenticated;
 
@@ -288,7 +288,7 @@ export function createDomainRoutes(
     },
 
     list: {
-      GET: withAdminApi(async (context: IApiContext) => {
+      GET: withAuthApi(async (context: IApiContext) => {
         const denied = requireSuperAdmin(context);
         if (denied) return denied;
 

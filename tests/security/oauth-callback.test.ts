@@ -72,7 +72,7 @@ vi.mock('@withwiz/toolkit/prisma/auth-adapter', () => {
 vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => {
   const wrap = (handler: any) => (req: Request, props?: unknown) =>
     handler({ request: req, user: undefined, metadata: {} }, props);
-  return { withPublicApi: vi.fn(wrap), withAdminApi: vi.fn(wrap) };
+  return { withPublicApi: vi.fn(wrap), withAuthApi: vi.fn(wrap) };
 });
 
 import { createAuthService } from '@withwiz/blog-system/auth';

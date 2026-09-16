@@ -15,7 +15,7 @@ vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
       return handler(context, props);
     };
   }),
-  withAdminApi: vi.fn((handler: any) => {
+  withAuthApi: vi.fn((handler: any) => {
     return (req: Request, props?: unknown) => {
       const context = {
         request: req,

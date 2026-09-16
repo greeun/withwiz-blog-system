@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   withPublicApi,
-  withAdminApi,
+  withAuthApi,
 } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import {
@@ -52,9 +52,9 @@ export interface AuthRoutes {
   register: { POST: ReturnType<typeof withPublicApi> };
   login: { POST: ReturnType<typeof withPublicApi> };
   refresh: { POST: ReturnType<typeof withPublicApi> };
-  logout: { POST: ReturnType<typeof withAdminApi> };
-  me: { GET: ReturnType<typeof withAdminApi> };
-  changePassword: { POST: ReturnType<typeof withAdminApi> };
+  logout: { POST: ReturnType<typeof withAuthApi> };
+  me: { GET: ReturnType<typeof withAuthApi> };
+  changePassword: { POST: ReturnType<typeof withAuthApi> };
   oauth: {
     login: { GET: ReturnType<typeof withPublicApi> };
     callback: { GET: ReturnType<typeof withPublicApi> };
@@ -192,7 +192,7 @@ export function createAuthRoutes(authService: AuthService): AuthRoutes {
     },
 
     logout: {
-      POST: withAdminApi(async (_context: IApiContext) => {
+      POST: withAuthApi(async (_context: IApiContext) => {
         // 토큰 무효화는 호스트 프로젝트의 쿠키/세션 관리에 위임
         return NextResponse.json({
           success: true,
@@ -202,7 +202,7 @@ export function createAuthRoutes(authService: AuthService): AuthRoutes {
     },
 
     me: {
-      GET: withAdminApi(async (context: IApiContext) => {
+      GET: withAuthApi(async (context: IApiContext) => {
         const user = context.user!;
 
         return NextResponse.json({
@@ -215,7 +215,7 @@ export function createAuthRoutes(authService: AuthService): AuthRoutes {
     },
 
     changePassword: {
-      POST: withAdminApi(async (context: IApiContext) => {
+      POST: withAuthApi(async (context: IApiContext) => {
         const user = context.user!;
         const { currentPassword, newPassword } = await context.request.json();
 

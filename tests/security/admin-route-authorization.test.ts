@@ -1,7 +1,7 @@
 /**
  * 관리 라우트 인가 보안 테스트
  *
- * tenant·billing·domain 라우트가 toolkit withAdminApi 인증 외에 요청자의 권한을 확인하는지 검증한다.
+ * tenant·billing·domain 라우트가 toolkit withAuthApi 인증 외에 요청자의 권한을 확인하는지 검증한다.
  * - 플랫폼 수준 작업(전체 테넌트 목록·생성·비활성화, 요금제 관리, 전체 도메인 목록)은 SUPER_ADMIN 만 허용한다.
  * - 테넌트 수준 작업은 해당 테넌트에 ADMIN 이상 역할로 소속된 사용자만 허용한다.
  * - 인증 정보가 없으면 401, 권한을 확인할 수 없거나 권한이 없으면 403 으로 거부한다(fail-closed).

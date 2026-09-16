@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   withPublicApi,
-  withAdminApi,
+  withAuthApi,
 } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import type { BillingService } from '../billing/billing-service';
@@ -40,7 +40,7 @@ export function createBillingRoutes(
     },
 
     checkout: {
-      POST: withAdminApi(async (context: IApiContext) => {
+      POST: withAuthApi(async (context: IApiContext) => {
         const unauthenticated = requireAuthenticatedUser(context);
         if (unauthenticated) return unauthenticated;
 
@@ -86,7 +86,7 @@ export function createBillingRoutes(
     },
 
     portal: {
-      POST: withAdminApi(async (context: IApiContext) => {
+      POST: withAuthApi(async (context: IApiContext) => {
         const unauthenticated = requireAuthenticatedUser(context);
         if (unauthenticated) return unauthenticated;
 
@@ -129,7 +129,7 @@ export function createBillingRoutes(
     },
 
     subscription: {
-      GET: withAdminApi(async (context: IApiContext) => {
+      GET: withAuthApi(async (context: IApiContext) => {
         const unauthenticated = requireAuthenticatedUser(context);
         if (unauthenticated) return unauthenticated;
 
@@ -155,7 +155,7 @@ export function createBillingRoutes(
     },
 
     usage: {
-      GET: withAdminApi(async (context: IApiContext) => {
+      GET: withAuthApi(async (context: IApiContext) => {
         const unauthenticated = requireAuthenticatedUser(context);
         if (unauthenticated) return unauthenticated;
 
@@ -219,7 +219,7 @@ export function createBillingRoutes(
     },
 
     adminPlans: {
-      GET: withAdminApi(async (context: IApiContext) => {
+      GET: withAuthApi(async (context: IApiContext) => {
         const denied = requireSuperAdmin(context);
         if (denied) return denied;
 
@@ -227,7 +227,7 @@ export function createBillingRoutes(
         return NextResponse.json({ success: true, data: plans });
       }),
 
-      POST: withAdminApi(async (context: IApiContext) => {
+      POST: withAuthApi(async (context: IApiContext) => {
         const denied = requireSuperAdmin(context);
         if (denied) return denied;
 
@@ -265,7 +265,7 @@ export function createBillingRoutes(
         }
       }),
 
-      PUT: withAdminApi(async (context: IApiContext) => {
+      PUT: withAuthApi(async (context: IApiContext) => {
         const denied = requireSuperAdmin(context);
         if (denied) return denied;
 
