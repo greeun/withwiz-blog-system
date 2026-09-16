@@ -8,9 +8,14 @@ import { SystemRole } from '../types/system';
 /**
  * 관리 라우트 인가 헬퍼.
  *
- * toolkit `withAdminApi` 는 인증과 toolkit 관리자 역할만 확인하므로, 이 모듈이 blog-system 의
- * 시스템 역할(SUPER_ADMIN)과 테넌트 멤버십 역할을 추가로 확인한다.
+ * 관리 라우트는 toolkit `withAuthApi` 로 인증만 확인하고, 역할 판정은 모두 이 모듈이 맡는다.
+ * toolkit `withAdminApi` 는 JWT 역할이 toolkit 관리자 역할(`'ADMIN'` 고정)인 요청만 통과시키므로
+ * blog-system 시스템 역할(USER·SUPER_ADMIN)과 맞지 않아 사용하지 않는다.
+ * 이 모듈은 시스템 역할(SUPER_ADMIN)과 테넌트 멤버십 역할을 확인하며,
  * 확인에 필요한 정보가 없으면 항상 거부한다(fail-closed).
+ *
+ * `withAuthApi` 로 감싼 핸들러는 인가 헬퍼를 호출하지 않으면 로그인한 모든 사용자에게 열리므로,
+ * 관리 핸들러는 반드시 `requireSuperAdmin` 또는 `requireTenantRole` 을 먼저 호출한다.
  */
 
 type Rejection = { ok: false; response: NextResponse };

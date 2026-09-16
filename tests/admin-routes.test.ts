@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
-  withAdminApi: vi.fn((handler: any) => handler),
+  withAuthApi: vi.fn((handler: any) => handler),
 }));
 
 vi.mock('@withwiz/toolkit/next/utils/api-helpers', () => ({

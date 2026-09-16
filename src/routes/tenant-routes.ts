@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withAdminApi } from '@withwiz/toolkit/next/middleware/wrappers';
+import { withAuthApi } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import {
   parsePagination,
@@ -73,22 +73,22 @@ const serviceDisabledResponse = () =>
   );
 
 export interface TenantRoutes {
-  list: { GET: ReturnType<typeof withAdminApi> };
-  create: { POST: ReturnType<typeof withAdminApi> };
+  list: { GET: ReturnType<typeof withAuthApi> };
+  create: { POST: ReturnType<typeof withAuthApi> };
   detail: {
-    GET: ReturnType<typeof withAdminApi>;
-    PUT: ReturnType<typeof withAdminApi>;
+    GET: ReturnType<typeof withAuthApi>;
+    PUT: ReturnType<typeof withAuthApi>;
   };
-  deactivate: { PATCH: ReturnType<typeof withAdminApi> };
+  deactivate: { PATCH: ReturnType<typeof withAuthApi> };
   settings: {
-    GET: ReturnType<typeof withAdminApi>;
-    PUT: ReturnType<typeof withAdminApi>;
+    GET: ReturnType<typeof withAuthApi>;
+    PUT: ReturnType<typeof withAuthApi>;
   };
   users: {
-    list: { GET: ReturnType<typeof withAdminApi> };
-    add: { POST: ReturnType<typeof withAdminApi> };
-    updateRole: { PATCH: ReturnType<typeof withAdminApi> };
-    remove: { DELETE: ReturnType<typeof withAdminApi> };
+    list: { GET: ReturnType<typeof withAuthApi> };
+    add: { POST: ReturnType<typeof withAuthApi> };
+    updateRole: { PATCH: ReturnType<typeof withAuthApi> };
+    remove: { DELETE: ReturnType<typeof withAuthApi> };
   };
 }
 
@@ -105,7 +105,7 @@ export function createTenantRoutes(
 ): TenantRoutes {
   return {
     list: {
-      GET: withAdminApi(async (context: IApiContext) => {
+      GET: withAuthApi(async (context: IApiContext) => {
         const denied = requireSuperAdmin(context);
         if (denied) return denied;
 
@@ -123,7 +123,7 @@ export function createTenantRoutes(
     },
 
     create: {
-      POST: withAdminApi(async (context: IApiContext) => {
+      POST: withAuthApi(async (context: IApiContext) => {
         const denied = requireSuperAdmin(context);
         if (denied) return denied;
 
@@ -156,7 +156,7 @@ export function createTenantRoutes(
     },
 
     detail: {
-      GET: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const id = await getRouteParam(props, 'id');
         const access = await requireTenantRole(context, tenantUserService, id);
         if (!access.ok) return access.response;
@@ -173,7 +173,7 @@ export function createTenantRoutes(
         return NextResponse.json({ success: true, data: tenant });
       }),
 
-      PUT: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      PUT: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const id = await getRouteParam(props, 'id');
         const access = await requireTenantRole(context, tenantUserService, id);
         if (!access.ok) return access.response;
@@ -226,7 +226,7 @@ export function createTenantRoutes(
     },
 
     deactivate: {
-      PATCH: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      PATCH: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const denied = requireSuperAdmin(context);
         if (denied) return denied;
 
@@ -250,7 +250,7 @@ export function createTenantRoutes(
     },
 
     settings: {
-      GET: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const id = await getRouteParam(props, 'id');
         const access = await requireTenantRole(context, tenantUserService, id);
         if (!access.ok) return access.response;
@@ -275,7 +275,7 @@ export function createTenantRoutes(
         }
       }),
 
-      PUT: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      PUT: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const id = await getRouteParam(props, 'id');
         const access = await requireTenantRole(context, tenantUserService, id);
         if (!access.ok) return access.response;
@@ -305,7 +305,7 @@ export function createTenantRoutes(
 
     users: {
       list: {
-        GET: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const unauthenticated = requireAuthenticatedUser(context);
           if (unauthenticated) return unauthenticated;
           if (!tenantUserService) return serviceDisabledResponse();
@@ -326,7 +326,7 @@ export function createTenantRoutes(
       },
 
       add: {
-        POST: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        POST: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const unauthenticated = requireAuthenticatedUser(context);
           if (unauthenticated) return unauthenticated;
           if (!tenantUserService) return serviceDisabledResponse();
@@ -392,7 +392,7 @@ export function createTenantRoutes(
       },
 
       updateRole: {
-        PATCH: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PATCH: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const unauthenticated = requireAuthenticatedUser(context);
           if (unauthenticated) return unauthenticated;
           if (!tenantUserService) return serviceDisabledResponse();
@@ -460,7 +460,7 @@ export function createTenantRoutes(
       },
 
       remove: {
-        DELETE: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        DELETE: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const unauthenticated = requireAuthenticatedUser(context);
           if (unauthenticated) return unauthenticated;
           if (!tenantUserService) return serviceDisabledResponse();

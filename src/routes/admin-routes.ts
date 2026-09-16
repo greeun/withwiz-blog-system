@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withAdminApi } from '@withwiz/toolkit/next/middleware/wrappers';
+import { withAuthApi } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import { isBlogErrorLike, toErrorResponse } from './route-error';
 import { isSuperAdmin } from './route-authorization';
@@ -14,22 +14,22 @@ import type { PrismaClientLike } from '../types/system';
 import { SystemRole } from '../types/system';
 
 export interface SuperAdminRoutes {
-  dashboard: { GET: ReturnType<typeof withAdminApi> };
+  dashboard: { GET: ReturnType<typeof withAuthApi> };
   tenants: {
-    list: { GET: ReturnType<typeof withAdminApi> };
-    detail: { GET: ReturnType<typeof withAdminApi> };
-    create: { POST: ReturnType<typeof withAdminApi> };
-    update: { PUT: ReturnType<typeof withAdminApi> };
-    deactivate: { PATCH: ReturnType<typeof withAdminApi> };
+    list: { GET: ReturnType<typeof withAuthApi> };
+    detail: { GET: ReturnType<typeof withAuthApi> };
+    create: { POST: ReturnType<typeof withAuthApi> };
+    update: { PUT: ReturnType<typeof withAuthApi> };
+    deactivate: { PATCH: ReturnType<typeof withAuthApi> };
   };
   users: {
-    list: { GET: ReturnType<typeof withAdminApi> };
-    detail: { GET: ReturnType<typeof withAdminApi> };
-    updateRole: { PATCH: ReturnType<typeof withAdminApi> };
-    deactivate: { PATCH: ReturnType<typeof withAdminApi> };
+    list: { GET: ReturnType<typeof withAuthApi> };
+    detail: { GET: ReturnType<typeof withAuthApi> };
+    updateRole: { PATCH: ReturnType<typeof withAuthApi> };
+    deactivate: { PATCH: ReturnType<typeof withAuthApi> };
   };
   onboarding: {
-    create: { POST: ReturnType<typeof withAdminApi> };
+    create: { POST: ReturnType<typeof withAuthApi> };
   };
 }
 
@@ -42,6 +42,7 @@ async function getRouteParam(props: unknown, key: string): Promise<string> {
 
 // toolkit의 IUser.role은 'USER' | 'ADMIN'이지만,
 // blog-system은 SUPER_ADMIN 역할을 확장하여 사용하므로 문자열 비교로 검증한다.
+// 라우트 래퍼 withAuthApi는 인증만 확인하므로 모든 핸들러가 이 검사를 먼저 거친다.
 function verifySuperAdmin(context: IApiContext): NextResponse | null {
   if (!isSuperAdmin(context.user)) {
     return NextResponse.json(
@@ -63,7 +64,7 @@ export function createSuperAdminRoutes(
 ): SuperAdminRoutes {
   return {
     dashboard: {
-      GET: withAdminApi(async (context: IApiContext) => {
+      GET: withAuthApi(async (context: IApiContext) => {
         const forbidden = verifySuperAdmin(context);
         if (forbidden) return forbidden;
 
@@ -104,7 +105,7 @@ export function createSuperAdminRoutes(
 
     tenants: {
       list: {
-        GET: withAdminApi(async (context: IApiContext) => {
+        GET: withAuthApi(async (context: IApiContext) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -130,7 +131,7 @@ export function createSuperAdminRoutes(
       },
 
       detail: {
-        GET: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -164,7 +165,7 @@ export function createSuperAdminRoutes(
       },
 
       create: {
-        POST: withAdminApi(async (context: IApiContext) => {
+        POST: withAuthApi(async (context: IApiContext) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -204,7 +205,7 @@ export function createSuperAdminRoutes(
       },
 
       update: {
-        PUT: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PUT: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -243,7 +244,7 @@ export function createSuperAdminRoutes(
       },
 
       deactivate: {
-        PATCH: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PATCH: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -272,7 +273,7 @@ export function createSuperAdminRoutes(
 
     users: {
       list: {
-        GET: withAdminApi(async (context: IApiContext) => {
+        GET: withAuthApi(async (context: IApiContext) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -334,7 +335,7 @@ export function createSuperAdminRoutes(
       },
 
       detail: {
-        GET: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -375,7 +376,7 @@ export function createSuperAdminRoutes(
       },
 
       updateRole: {
-        PATCH: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PATCH: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -447,7 +448,7 @@ export function createSuperAdminRoutes(
       },
 
       deactivate: {
-        PATCH: withAdminApi(async (context: IApiContext, props?: unknown) => {
+        PATCH: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
@@ -495,7 +496,7 @@ export function createSuperAdminRoutes(
 
     onboarding: {
       create: {
-        POST: withAdminApi(async (context: IApiContext) => {
+        POST: withAuthApi(async (context: IApiContext) => {
           const forbidden = verifySuperAdmin(context);
           if (forbidden) return forbidden;
 
