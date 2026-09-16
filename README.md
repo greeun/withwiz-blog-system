@@ -569,6 +569,15 @@ export const GET = system.routes.admin?.dashboard;
 export const POST = system.routes.admin?.deactivateTenant;
 ```
 
+Management routes (`routes.admin`, `routes.tenant`, `routes.billing`, `routes.domain`, except the public billing `plans` and `webhook`) are wrapped with toolkit `withAuthApi`, which only authenticates the request. Each handler then checks blog-system roles:
+
+- Super admin routes and platform-level operations (tenant list/create/deactivate, billing `adminPlans`, domain `list`) require the JWT role `SUPER_ADMIN`.
+- Tenant-level operations require membership in the target tenant with `ADMIN` or higher. A system role (including `SUPER_ADMIN`) does not replace membership.
+- The toolkit `'ADMIN'` role required by `withAdminApi` is not needed. Missing token → 401, insufficient permission → 403.
+- These routes use the toolkit `api` rate limit type.
+
+`routes.auth` `logout`, `me` and `changePassword` are available to any signed-in user.
+
 ### Initial Setup
 
 The first super admin is created via database migration/seed:

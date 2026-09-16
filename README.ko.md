@@ -569,6 +569,15 @@ export const GET = system.routes.admin?.dashboard;
 export const POST = system.routes.admin?.deactivateTenant;
 ```
 
+관리 라우트(`routes.admin`·`routes.tenant`·`routes.billing`·`routes.domain`, 공개 경로인 billing `plans`·`webhook` 제외)는 toolkit `withAuthApi` 로 인증만 확인하고, 역할은 각 핸들러가 blog-system 역할로 확인한다.
+
+- 슈퍼 어드민 라우트와 플랫폼 수준 작업(테넌트 목록·생성·비활성화, billing `adminPlans`, domain `list`)은 JWT 역할이 `SUPER_ADMIN` 이어야 한다.
+- 테넌트 수준 작업은 대상 테넌트에 `ADMIN` 이상 역할로 소속되어야 한다. 시스템 역할(`SUPER_ADMIN` 포함)은 테넌트 소속을 대신하지 않는다.
+- toolkit `withAdminApi` 가 요구하는 `'ADMIN'` 역할은 필요하지 않다. 토큰이 없으면 401, 권한이 없으면 403 이다.
+- 이 라우트들은 toolkit rate limit 의 `api` 종류를 사용한다.
+
+`routes.auth` 의 `logout`·`me`·`changePassword` 는 로그인한 모든 사용자가 사용할 수 있다.
+
 ### 초기 설정
 
 최초 슈퍼 어드민은 DB 마이그레이션/시드로 생성한다:
