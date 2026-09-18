@@ -25,6 +25,19 @@ const DEFAULT_CATEGORIES: Array<{ key: string; label: string }> = [
   { key: 'tech', label: '기술' },
 ];
 
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+/** HTML 본문에 삽입하는 값이 태그·속성으로 해석되지 않도록 이스케이프한다. */
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
+}
+
 export interface OnboardingService {
   onboardTenant(data: OnboardingInput): Promise<OnboardingResult>;
 }
@@ -65,11 +78,14 @@ export function createOnboardingService(
       if (data.createSamplePost) {
         try {
           const blogService = createScopedBlogService(tenant.id);
+          // content 는 HTML 이므로 삽입하는 입력값을 이스케이프한다.
+          // title·excerpt 는 텍스트 필드이며 출력 계층이 이스케이프하므로 원문을 유지한다.
+          const safeTenantName = escapeHtml(data.tenantName);
           const samplePost = await blogService.create(
             {
               title: `${data.tenantName} 블로그에 오신 것을 환영합니다!`,
               slug: 'welcome',
-              content: `<h2>안녕하세요!</h2><p><strong>${data.tenantName}</strong> 블로그가 개설되었습니다.</p><p>이 게시글은 자동으로 생성된 샘플입니다. 자유롭게 수정하거나 삭제해 주세요.</p>`,
+              content: `<h2>안녕하세요!</h2><p><strong>${safeTenantName}</strong> 블로그가 개설되었습니다.</p><p>이 게시글은 자동으로 생성된 샘플입니다. 자유롭게 수정하거나 삭제해 주세요.</p>`,
               category: categories[0]?.key ?? 'general',
               excerpt: `${data.tenantName} 블로그의 첫 번째 게시글입니다.`,
               published: true,

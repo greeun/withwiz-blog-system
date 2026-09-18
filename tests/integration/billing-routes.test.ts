@@ -3,6 +3,9 @@
  *
  * createBillingRoutes()로 생성된 핸들러를 실제 Request 객체로 호출하여
  * Response 상태 코드와 JSON 응답을 검증한다.
+ *
+ * 인가 전제: 요청자 admin-1 은 테넌트 t-1 의 ADMIN 구성원이다. 거부 경로는
+ * tests/security/admin-route-authorization.test.ts 에서 검증한다.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -15,7 +18,7 @@ vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
       return handler(context, props);
     };
   }),
-  withAdminApi: vi.fn((handler: any) => {
+  withAuthApi: vi.fn((handler: any) => {
     return (req: Request, props?: unknown) => {
       const context = {
         request: req,
@@ -80,6 +83,14 @@ function createMockPlanService() {
   } as any;
 }
 
+function createMockTenantUserService() {
+  return {
+    getUserRole: vi.fn(async (tenantId: string, userId: string) =>
+      tenantId === 't-1' && userId === 'admin-1' ? 'ADMIN' : null,
+    ),
+  } as any;
+}
+
 describe('과금 라우트 핸들러', () => {
   let billingService: ReturnType<typeof createMockBillingService>;
   let planService: ReturnType<typeof createMockPlanService>;
@@ -88,7 +99,7 @@ describe('과금 라우트 핸들러', () => {
   beforeEach(() => {
     billingService = createMockBillingService();
     planService = createMockPlanService();
-    routes = createBillingRoutes(billingService, planService);
+    routes = createBillingRoutes(billingService, planService, createMockTenantUserService());
   });
 
   // ── 플랜 목록 ──

@@ -6,6 +6,7 @@ export type { TenantResolver } from './tenant-resolver';
 
 export {
   resolveTenantFromRequest,
+  createTenantResolutionMiddleware,
   TENANT_ID_HEADER,
   TENANT_SLUG_HEADER,
 } from './tenant-middleware';
