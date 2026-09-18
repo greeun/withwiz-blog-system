@@ -3,17 +3,23 @@
  *
  * createDomainRoutes()로 생성된 핸들러를 실제 Request 객체로 호출하여
  * Response 상태 코드와 JSON 응답을 검증한다.
+ *
+ * 인가 전제: 요청자 admin-1 은 테넌트 t-1 의 ADMIN 구성원이고, 전체 목록(BS-DR-05)은
+ * 시스템 역할 SUPER_ADMIN 으로 호출한다. 거부 경로는
+ * tests/security/admin-route-authorization.test.ts 에서 검증한다.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const auth = vi.hoisted(() => ({ role: 'ADMIN' }));
 
 // ── 미들웨어 모킹 ──
 
 vi.mock('@withwiz/toolkit/next/middleware/wrappers', () => ({
-  withAdminApi: vi.fn((handler: any) => {
+  withAuthApi: vi.fn((handler: any) => {
     return (req: Request, props?: unknown) => {
       const context = {
         request: req,
-        user: { id: 'admin-1', role: 'ADMIN', email: 'admin@test.com' },
+        user: { id: 'admin-1', role: auth.role, email: 'admin@test.com' },
         metadata: {},
       };
       return handler(context, props);
@@ -79,8 +85,14 @@ describe('도메인 관리 라우트 핸들러', () => {
   let routes: ReturnType<typeof createDomainRoutes>;
 
   beforeEach(() => {
+    auth.role = 'ADMIN';
     domainService = createMockDomainService();
-    routes = createDomainRoutes(domainService);
+    const tenantUserService = {
+      getUserRole: vi.fn(async (tenantId: string, userId: string) =>
+        tenantId === 't-1' && userId === 'admin-1' ? 'ADMIN' : null,
+      ),
+    } as any;
+    routes = createDomainRoutes(domainService, tenantUserService);
   });
 
   // ── 도메인 추가 ──
@@ -149,6 +161,7 @@ describe('도메인 관리 라우트 핸들러', () => {
   // ── 도메인 목록 ──
 
   it('BS-DR-05: 도메인 목록 — GET → 전체 도메인 목록 반환', async () => {
+    auth.role = 'SUPER_ADMIN';
     const req = new Request('http://localhost/api/admin/domains?page=1');
     const res = await routes.list.GET(req);
     const body = await res.json();

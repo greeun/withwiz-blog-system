@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withAdminApi } from '@withwiz/toolkit/next/middleware/wrappers';
+import { withAuthApi } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { IApiContext } from '@withwiz/toolkit/next/middleware/types';
 import {
   parsePagination,
@@ -13,6 +13,13 @@ import {
   UpdateTenantSchema,
 } from '../validators/tenant.validator';
 import type { ZodSchema } from 'zod';
+import {
+  forbidRoleEscalation,
+  hasRoleLevel,
+  requireAuthenticatedUser,
+  requireSuperAdmin,
+  requireTenantRole,
+} from './route-authorization';
 
 async function getRouteParam(props: unknown, key: string): Promise<string> {
   const { [key]: value } = await (
@@ -44,33 +51,64 @@ function validateAndParse<T>(
   return { success: true, data: result.data };
 }
 
+/**
+ * 테넌트 구성원이 detail.PUT 으로 바꿀 수 없는 필드.
+ * 커스텀 도메인은 도메인 라우트의 중복 확인·DNS 인증 흐름을, 요금제는 과금 흐름을,
+ * 활성 상태는 슈퍼 관리자 라우트를 거쳐야 하므로 이 경로에서는 거부한다.
+ */
+const PLATFORM_CONTROLLED_FIELDS = ['customDomain', 'planId', 'isActive'] as const;
+
+function findPlatformControlledFields(body: unknown): string[] {
+  if (!body || typeof body !== 'object') return [];
+  const record = body as Record<string, unknown>;
+  return PLATFORM_CONTROLLED_FIELDS.filter(
+    (field) => field in record && record[field] !== undefined,
+  );
+}
+
+const serviceDisabledResponse = () =>
+  NextResponse.json(
+    { success: false, error: { message: '사용자 관리 기능이 비활성화되어 있습니다.' } },
+    { status: 501 },
+  );
+
 export interface TenantRoutes {
-  list: { GET: ReturnType<typeof withAdminApi> };
-  create: { POST: ReturnType<typeof withAdminApi> };
+  list: { GET: ReturnType<typeof withAuthApi> };
+  create: { POST: ReturnType<typeof withAuthApi> };
   detail: {
-    GET: ReturnType<typeof withAdminApi>;
-    PUT: ReturnType<typeof withAdminApi>;
+    GET: ReturnType<typeof withAuthApi>;
+    PUT: ReturnType<typeof withAuthApi>;
   };
-  deactivate: { PATCH: ReturnType<typeof withAdminApi> };
+  deactivate: { PATCH: ReturnType<typeof withAuthApi> };
   settings: {
-    GET: ReturnType<typeof withAdminApi>;
-    PUT: ReturnType<typeof withAdminApi>;
+    GET: ReturnType<typeof withAuthApi>;
+    PUT: ReturnType<typeof withAuthApi>;
   };
   users: {
-    list: { GET: ReturnType<typeof withAdminApi> };
-    add: { POST: ReturnType<typeof withAdminApi> };
-    updateRole: { PATCH: ReturnType<typeof withAdminApi> };
-    remove: { DELETE: ReturnType<typeof withAdminApi> };
+    list: { GET: ReturnType<typeof withAuthApi> };
+    add: { POST: ReturnType<typeof withAuthApi> };
+    updateRole: { PATCH: ReturnType<typeof withAuthApi> };
+    remove: { DELETE: ReturnType<typeof withAuthApi> };
   };
 }
 
+/**
+ * 테넌트 관리 라우트.
+ *
+ * - `list`, `create`, `deactivate`: 플랫폼 수준 작업이므로 SUPER_ADMIN 만 호출할 수 있다.
+ * - 그 밖의 라우트: 경로 파라미터 `id` 테넌트에 ADMIN 이상 역할로 소속된 사용자만 호출할 수 있다.
+ *   `tenantUserService` 를 전달하지 않으면 소속을 확인할 수 없으므로 403 으로 거부한다.
+ */
 export function createTenantRoutes(
   tenantService: TenantService,
   tenantUserService?: TenantUserService,
 ): TenantRoutes {
   return {
     list: {
-      GET: withAdminApi(async (context: IApiContext) => {
+      GET: withAuthApi(async (context: IApiContext) => {
+        const denied = requireSuperAdmin(context);
+        if (denied) return denied;
+
         const { page, limit } = parsePagination(context.request);
         const search = getSearchParam(context.request, 'search');
 
@@ -85,7 +123,10 @@ export function createTenantRoutes(
     },
 
     create: {
-      POST: withAdminApi(async (context: IApiContext) => {
+      POST: withAuthApi(async (context: IApiContext) => {
+        const denied = requireSuperAdmin(context);
+        if (denied) return denied;
+
         const body = await context.request.json();
         const validation = validateAndParse(CreateTenantSchema, body);
         if (!validation.success) return validation.response;
@@ -115,8 +156,11 @@ export function createTenantRoutes(
     },
 
     detail: {
-      GET: withAdminApi(async (_context: IApiContext, props?: unknown) => {
+      GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const id = await getRouteParam(props, 'id');
+        const access = await requireTenantRole(context, tenantUserService, id);
+        if (!access.ok) return access.response;
+
         const tenant = await tenantService.getById(id);
 
         if (!tenant) {
@@ -129,9 +173,26 @@ export function createTenantRoutes(
         return NextResponse.json({ success: true, data: tenant });
       }),
 
-      PUT: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      PUT: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const id = await getRouteParam(props, 'id');
+        const access = await requireTenantRole(context, tenantUserService, id);
+        if (!access.ok) return access.response;
+
         const body = await context.request.json();
+
+        const controlled = findPlatformControlledFields(body);
+        if (controlled.length > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                message: `이 경로에서는 ${controlled.join(', ')} 을(를) 변경할 수 없습니다.`,
+              },
+            },
+            { status: 403 },
+          );
+        }
+
         const validation = validateAndParse(UpdateTenantSchema, body);
         if (!validation.success) return validation.response;
 
@@ -165,7 +226,10 @@ export function createTenantRoutes(
     },
 
     deactivate: {
-      PATCH: withAdminApi(async (_context: IApiContext, props?: unknown) => {
+      PATCH: withAuthApi(async (context: IApiContext, props?: unknown) => {
+        const denied = requireSuperAdmin(context);
+        if (denied) return denied;
+
         const id = await getRouteParam(props, 'id');
 
         const existing = await tenantService.getById(id);
@@ -186,8 +250,10 @@ export function createTenantRoutes(
     },
 
     settings: {
-      GET: withAdminApi(async (_context: IApiContext, props?: unknown) => {
+      GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const id = await getRouteParam(props, 'id');
+        const access = await requireTenantRole(context, tenantUserService, id);
+        if (!access.ok) return access.response;
 
         try {
           const settings = await tenantService.getSettings(id);
@@ -209,8 +275,11 @@ export function createTenantRoutes(
         }
       }),
 
-      PUT: withAdminApi(async (context: IApiContext, props?: unknown) => {
+      PUT: withAuthApi(async (context: IApiContext, props?: unknown) => {
         const id = await getRouteParam(props, 'id');
+        const access = await requireTenantRole(context, tenantUserService, id);
+        if (!access.ok) return access.response;
+
         const body = await context.request.json();
 
         try {
@@ -236,16 +305,16 @@ export function createTenantRoutes(
 
     users: {
       list: {
-        GET: withAdminApi(async (context: IApiContext, props?: unknown) => {
-          const tenantId = await getRouteParam(props, 'id');
-          const { page, limit } = parsePagination(context.request);
+        GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
+          const unauthenticated = requireAuthenticatedUser(context);
+          if (unauthenticated) return unauthenticated;
+          if (!tenantUserService) return serviceDisabledResponse();
 
-          if (!tenantUserService) {
-            return NextResponse.json(
-              { success: false, error: { message: '사용자 관리 기능이 비활성화되어 있습니다.' } },
-              { status: 501 },
-            );
-          }
+          const tenantId = await getRouteParam(props, 'id');
+          const access = await requireTenantRole(context, tenantUserService, tenantId);
+          if (!access.ok) return access.response;
+
+          const { page, limit } = parsePagination(context.request);
 
           const result = await tenantUserService.listUsers(tenantId, {
             page,
@@ -257,16 +326,16 @@ export function createTenantRoutes(
       },
 
       add: {
-        POST: withAdminApi(async (context: IApiContext, props?: unknown) => {
-          const tenantId = await getRouteParam(props, 'id');
-          const body = await context.request.json();
+        POST: withAuthApi(async (context: IApiContext, props?: unknown) => {
+          const unauthenticated = requireAuthenticatedUser(context);
+          if (unauthenticated) return unauthenticated;
+          if (!tenantUserService) return serviceDisabledResponse();
 
-          if (!tenantUserService) {
-            return NextResponse.json(
-              { success: false, error: { message: '사용자 관리 기능이 비활성화되어 있습니다.' } },
-              { status: 501 },
-            );
-          }
+          const tenantId = await getRouteParam(props, 'id');
+          const access = await requireTenantRole(context, tenantUserService, tenantId);
+          if (!access.ok) return access.response;
+
+          const body = await context.request.json();
 
           if (!body.userId || !body.role) {
             return NextResponse.json(
@@ -288,6 +357,10 @@ export function createTenantRoutes(
               },
               { status: 400 },
             );
+          }
+
+          if (!hasRoleLevel(access.role, body.role as TenantRole)) {
+            return forbidRoleEscalation();
           }
 
           try {
@@ -319,16 +392,16 @@ export function createTenantRoutes(
       },
 
       updateRole: {
-        PATCH: withAdminApi(async (context: IApiContext, props?: unknown) => {
-          const tenantId = await getRouteParam(props, 'id');
-          const body = await context.request.json();
+        PATCH: withAuthApi(async (context: IApiContext, props?: unknown) => {
+          const unauthenticated = requireAuthenticatedUser(context);
+          if (unauthenticated) return unauthenticated;
+          if (!tenantUserService) return serviceDisabledResponse();
 
-          if (!tenantUserService) {
-            return NextResponse.json(
-              { success: false, error: { message: '사용자 관리 기능이 비활성화되어 있습니다.' } },
-              { status: 501 },
-            );
-          }
+          const tenantId = await getRouteParam(props, 'id');
+          const access = await requireTenantRole(context, tenantUserService, tenantId);
+          if (!access.ok) return access.response;
+
+          const body = await context.request.json();
 
           if (!body.userId || !body.role) {
             return NextResponse.json(
@@ -350,6 +423,15 @@ export function createTenantRoutes(
               },
               { status: 400 },
             );
+          }
+
+          // 부여할 역할과 대상의 현재 역할이 모두 요청자 역할 이하여야 한다.
+          const targetRole = await tenantUserService.getUserRole(tenantId, body.userId);
+          if (
+            !hasRoleLevel(access.role, body.role as TenantRole) ||
+            (targetRole && !hasRoleLevel(access.role, targetRole))
+          ) {
+            return forbidRoleEscalation();
           }
 
           try {
@@ -378,16 +460,16 @@ export function createTenantRoutes(
       },
 
       remove: {
-        DELETE: withAdminApi(async (context: IApiContext, props?: unknown) => {
-          const tenantId = await getRouteParam(props, 'id');
-          const body = await context.request.json();
+        DELETE: withAuthApi(async (context: IApiContext, props?: unknown) => {
+          const unauthenticated = requireAuthenticatedUser(context);
+          if (unauthenticated) return unauthenticated;
+          if (!tenantUserService) return serviceDisabledResponse();
 
-          if (!tenantUserService) {
-            return NextResponse.json(
-              { success: false, error: { message: '사용자 관리 기능이 비활성화되어 있습니다.' } },
-              { status: 501 },
-            );
-          }
+          const tenantId = await getRouteParam(props, 'id');
+          const access = await requireTenantRole(context, tenantUserService, tenantId);
+          if (!access.ok) return access.response;
+
+          const body = await context.request.json();
 
           if (!body.userId) {
             return NextResponse.json(
@@ -397,6 +479,11 @@ export function createTenantRoutes(
               },
               { status: 400 },
             );
+          }
+
+          const targetRole = await tenantUserService.getUserRole(tenantId, body.userId);
+          if (targetRole && !hasRoleLevel(access.role, targetRole)) {
+            return forbidRoleEscalation();
           }
 
           try {

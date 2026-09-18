@@ -36,7 +36,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@withwiz/blog-core": "^2.1.4",
+    "@withwiz/blog-core": "^2.1.5",
     "stripe": "^17"
   },
   "peerDependencies": {
