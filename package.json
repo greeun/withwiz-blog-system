@@ -59,5 +59,16 @@
     "typescript": "^5.0.0",
     "vitest": "^3.2.7",
     "zod": "^4.6.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greeun/withwiz-blog-system.git"
+  },
+  "homepage": "https://github.com/greeun/withwiz-blog-system#readme",
+  "bugs": {
+    "url": "https://github.com/greeun/withwiz-blog-system/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
