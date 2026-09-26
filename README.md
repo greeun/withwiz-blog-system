@@ -573,6 +573,7 @@ Management routes (`routes.admin`, `routes.tenant`, `routes.billing`, `routes.do
 
 - Super admin routes and platform-level operations (tenant list/create/deactivate, billing `adminPlans`, domain `list`) require the JWT role `SUPER_ADMIN`.
 - Tenant-level operations require membership in the target tenant with `ADMIN` or higher. A system role (including `SUPER_ADMIN`) does not replace membership.
+- Tenant-level operations check authorization before input validation. A missing `tenantId` or membership service yields 403, not 400 or 501.
 - The toolkit `'ADMIN'` role required by `withAdminApi` is not needed. Missing token → 401, insufficient permission → 403.
 - These routes use the toolkit `api` rate limit type.
 

@@ -573,6 +573,7 @@ export const POST = system.routes.admin?.deactivateTenant;
 
 - 슈퍼 어드민 라우트와 플랫폼 수준 작업(테넌트 목록·생성·비활성화, billing `adminPlans`, domain `list`)은 JWT 역할이 `SUPER_ADMIN` 이어야 한다.
 - 테넌트 수준 작업은 대상 테넌트에 `ADMIN` 이상 역할로 소속되어야 한다. 시스템 역할(`SUPER_ADMIN` 포함)은 테넌트 소속을 대신하지 않는다.
+- 테넌트 수준 작업은 입력 검증보다 인가를 먼저 확인한다. `tenantId` 가 없거나 멤버십 서비스가 없으면 400·501 이 아니라 403 이다.
 - toolkit `withAdminApi` 가 요구하는 `'ADMIN'` 역할은 필요하지 않다. 토큰이 없으면 401, 권한이 없으면 403 이다.
 - 이 라우트들은 toolkit rate limit 의 `api` 종류를 사용한다.
 
