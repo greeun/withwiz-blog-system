@@ -451,7 +451,7 @@ export async function GET(req: Request) {
 2. 시스템이 인증 토큰을 생성
 3. 테넌트가 DNS TXT 레코드 생성: `_withwiz-verify.{domain}` → 토큰 값
 4. 시스템이 TXT 레코드를 검증
-5. 도메인 활성화
+5. 도메인 활성화 (인증에 성공한 뒤에만 `tenant.customDomain` 을 설정한다. 인증 전에는 이 도메인으로 테넌트가 해석되지 않는다)
 
 ### Vercel 통합 (선택)
 

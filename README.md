@@ -451,7 +451,7 @@ Custom domains are verified via DNS TXT records:
 2. System generates a verification token
 3. Tenant creates DNS TXT record: `_withwiz-verify.{domain}` → token value
 4. System verifies the TXT record
-5. Domain is activated
+5. Domain is activated (`tenant.customDomain` is set only after verification succeeds; the domain does not resolve to the tenant before that)
 
 ### Optional Vercel Integration
 
