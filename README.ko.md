@@ -532,11 +532,11 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## 온보딩
 
-`OnboardingService`는 새 테넌트 셋업을 원자적으로 수행한다:
+`OnboardingService`는 새 테넌트 셋업을 순차적으로 수행한다(트랜잭션이 아니므로 중간에 실패하면 앞 단계는 되돌리지 않는다):
 
 1. **테넌트** — 이름, 슬러그, 설정
-2. **소유자** — `OWNER` 역할의 첫 사용자
-3. **기본 카테고리** — general, notice, tech
+2. **소유자** — 이미 가입한 사용자(`ownerUserId`)를 `OWNER` 역할로 추가
+3. **기본 카테고리** — general, notice, tech (`categories` 로 변경 가능)
 4. **샘플 게시물** (선택)
 5. **플랜 할당** (선택)
 
@@ -544,18 +544,23 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 - 3~63자
 - 소문자, 숫자, 하이픈만 허용
-- 예약어 차단: `www`, `api`, `admin`, `app`, `mail`, `blog`, `static`
+- 예약어(`www`, `api`, `admin` 등) 차단은 패키지가 하지 않으므로 호스트가 확인한다
 
 ```ts
-const result = await system.onboardingService!.onboard({
+const result = await system.onboardingService!.onboardTenant({
   tenantName: 'My Blog',
   tenantSlug: 'my-blog',
-  ownerEmail: 'owner@example.com',
-  ownerPassword: 'securePassword123',
-  ownerName: 'Blog Owner',
+  ownerUserId: user.id, // 이미 가입한 사용자
+  createSamplePost: true,
   planId: 'free',
 });
-// result.tenant, result.owner, result.tenantUser
+// result.tenant, result.tenantUser, result.samplePostId
+```
+
+슈퍼 관리자 콘솔에서는 `routes.admin.onboarding.create`(슈퍼 관리자 전용)와 `OnboardingWizard` 를 함께 쓸 수 있다. 위저드의 `ownerUserId` 는 필수이며, 소유자 선택 UI 는 호스트가 제공한다.
+
+```tsx
+<OnboardingWizard apiBasePath="/api" ownerUserId={selectedUserId} onComplete={(result) => { /* ... */ }} />
 ```
 
 ## 슈퍼 어드민

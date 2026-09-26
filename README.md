@@ -532,11 +532,11 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## Onboarding
 
-The `OnboardingService` atomically creates a new tenant setup:
+The `OnboardingService` creates a new tenant setup step by step (not a transaction; earlier steps are not rolled back if a later one fails):
 
 1. **Tenant** — name, slug, settings
-2. **Owner** — first user with `OWNER` role
-3. **Default categories** — general, notice, tech
+2. **Owner** — an existing user (`ownerUserId`) added with the `OWNER` role
+3. **Default categories** — general, notice, tech (override with `categories`)
 4. **Sample post** (optional)
 5. **Plan assignment** (optional)
 
@@ -544,18 +544,23 @@ The `OnboardingService` atomically creates a new tenant setup:
 
 - 3–63 characters
 - Lowercase letters, digits, hyphens only
-- Reserved words blocked: `www`, `api`, `admin`, `app`, `mail`, `blog`, `static`
+- Reserved words (`www`, `api`, `admin`, ...) are not blocked by the package; the host must check them
 
 ```ts
-const result = await system.onboardingService!.onboard({
+const result = await system.onboardingService!.onboardTenant({
   tenantName: 'My Blog',
   tenantSlug: 'my-blog',
-  ownerEmail: 'owner@example.com',
-  ownerPassword: 'securePassword123',
-  ownerName: 'Blog Owner',
+  ownerUserId: user.id, // an existing user
+  createSamplePost: true,
   planId: 'free',
 });
-// result.tenant, result.owner, result.tenantUser
+// result.tenant, result.tenantUser, result.samplePostId
+```
+
+In a super admin console, use `routes.admin.onboarding.create` (super admin only) together with `OnboardingWizard`. The wizard's `ownerUserId` prop is required; the host provides the owner selection UI.
+
+```tsx
+<OnboardingWizard apiBasePath="/api" ownerUserId={selectedUserId} onComplete={(result) => { /* ... */ }} />
 ```
 
 ## Super Admin

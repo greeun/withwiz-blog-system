@@ -5,6 +5,12 @@ import type { OnboardingResult } from './onboarding-service';
 
 interface OnboardingWizardProps {
   apiBasePath: string;
+  /**
+   * 새 테넌트의 OWNER 로 지정할 사용자 ID.
+   * 제출 대상 `${apiBasePath}/admin/onboarding` 은 슈퍼 관리자 전용이며 이 값을 필수로 요구한다.
+   * 소유자 선택 UI 는 호스트가 제공한다.
+   */
+  ownerUserId: string;
   onComplete: (result: OnboardingResult) => void;
 }
 
@@ -29,6 +35,7 @@ function generateSlug(name: string): string {
 
 export function OnboardingWizard({
   apiBasePath,
+  ownerUserId,
   onComplete,
 }: OnboardingWizardProps) {
   const [step, setStep] = useState(1);
@@ -101,7 +108,7 @@ export function OnboardingWizard({
         body: JSON.stringify({
           tenantName,
           tenantSlug,
-          ownerUserId: '', // 서버에서 현재 사용자로 설정
+          ownerUserId,
           categories: selectedCategories,
           createSamplePost,
         }),
@@ -122,6 +129,7 @@ export function OnboardingWizard({
     }
   }, [
     apiBasePath,
+    ownerUserId,
     tenantName,
     tenantSlug,
     selectedCategories,

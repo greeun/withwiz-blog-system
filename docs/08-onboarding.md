@@ -1,6 +1,6 @@
 # 08. 온보딩 (Onboarding)
 
-`OnboardingService`는 신규 테넌트의 초기 설정을 **트랜잭션처럼** 묶어서 처리한다:
+`OnboardingService`는 신규 테넌트의 초기 설정을 순차적으로 처리한다(트랜잭션이 아니다. 아래 "트랜잭션 보장" 참고):
 
 1. 테넌트 생성 (슬러그 + 이름 + 설정)
 2. 소유자(OWNER) 사용자 추가
@@ -100,17 +100,18 @@ if (RESERVED.includes(slug)) {
 
 ## 온보딩 위저드 컴포넌트
 
-`OnboardingWizard`는 단계별 UI 셸이다.
+`OnboardingWizard`는 슈퍼 관리자 콘솔용 단계별 UI 셸이다. `${apiBasePath}/admin/onboarding`(`routes.admin.onboarding.create`, 슈퍼 관리자 전용)으로 제출하며, 새 테넌트의 소유자는 `ownerUserId` prop 으로 지정한다. 소유자 선택 UI 는 호스트가 제공한다.
 
 ```tsx
 'use client';
-import { OnboardingWizard } from '@withwiz/blog-system/admin';
+import { OnboardingWizard } from '@withwiz/blog-system/onboarding';
 
-export default function OnboardingPage() {
+export default function TenantOnboardingPage({ selectedUserId }: { selectedUserId: string }) {
   return (
     <OnboardingWizard
-      submitEndpoint="/api/onboarding"
-      onSuccess={(result) => {
+      apiBasePath="/api"
+      ownerUserId={selectedUserId}
+      onComplete={(result) => {
         window.location.href = `https://${result.tenant.slug}.${process.env.NEXT_PUBLIC_BASE_DOMAIN}`;
       }}
     />
@@ -118,13 +119,13 @@ export default function OnboardingPage() {
 }
 ```
 
-기본 단계:
-1. 계정 생성 (이메일 + 비밀번호 + 이름)
-2. 테넌트 정보 (이름 + 슬러그 + 슬러그 중복 체크)
-3. 카테고리 선택 (기본 3개 유지 또는 커스텀)
-4. 샘플 글 생성 여부
-5. 플랜 선택 (무료/유료)
-6. 결제(유료 시) → Stripe 체크아웃으로 리다이렉트
+단계:
+1. 블로그 기본 정보 (이름 + 슬러그)
+2. 카테고리 설정 (기본 카테고리 유지 또는 커스텀)
+3. 샘플 게시글 생성 여부
+4. 확인 후 제출
+
+계정 생성·플랜 선택·결제 단계는 없다. 사용자가 직접 가입하고 자기 테넌트를 만드는 셀프 서비스 흐름은 위 "사용 예"처럼 호스트 라우트에서 `authService.register` 와 `onboardTenant` 를 조합한다.
 
 ## 완료 후 리다이렉트 전략
 

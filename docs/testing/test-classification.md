@@ -1,6 +1,6 @@
 # @withwiz/blog-system 테스트 분류 체계
 
-> 작성일: 2026-09-13. 갱신일: 2026-09-27 (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0 에 multi 모드 블로그 관리 라우트 인가, 인가 순서 변경, 커스텀 도메인 인증 후 활성화, 슈퍼 관리자 테넌트 수정 검증, 프록시 중첩 쓰기 거부 반영). 이 문서는 `tests/spec.md`(구현 작업 계획서)를 대신하는 현행 분류 문서이다. 모든 수치와 케이스는 기준 커밋에서 테스트를 실행하고 코드를 읽어 확인한 값만 기재했다.
+> 작성일: 2026-09-13. 갱신일: 2026-09-27 (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0 에 multi 모드 블로그 관리 라우트 인가, 인가 순서 변경, 커스텀 도메인 인증 후 활성화, 슈퍼 관리자 테넌트 수정 검증, 프록시 중첩 쓰기 거부, OnboardingWizard 소유자 지정 반영). 이 문서는 `tests/spec.md`(구현 작업 계획서)를 대신하는 현행 분류 문서이다. 모든 수치와 케이스는 기준 커밋에서 테스트를 실행하고 코드를 읽어 확인한 값만 기재했다.
 
 ## 개요
 
@@ -8,7 +8,7 @@
 |------|------|
 | 대상 | `@withwiz/blog-system` 0.2.3: 단일·멀티 테넌트 블로그 SaaS 프레임워크. 2026-09-17 판은 0.2.3 에 결함 수정 6건과 blog-core 2.1.5 의존 갱신을 더한 브랜치 `fix/residual-defects` 기준이며 버전은 올리지 않았다 |
 | 범위 | `src/` 전체(core/, tenant/, auth/, billing/, onboarding/, routes/, admin/, validators/, types/)와 `tests/` 아래 테스트 파일 41개 |
-| 기준 커밋 | `4bbe3b0` fix(proxy): 테넌트 스코프 Prisma 에서 관계 필드의 중첩 쓰기를 거부한다, `2901539` fix(admin): 슈퍼 관리자 테넌트 수정 입력을 스키마로 검증하고 도메인 중복을 확인한다, `f1e65b7` fix(domain): 커스텀 도메인을 DNS 인증에 성공한 뒤에만 테넌트에 설정한다, `6b5d8df` fix(routes): billing·domain·tenant 테넌트 작업의 인가를 입력 검증보다 먼저 확인한다, `b410e60` fix(routes): multi 모드 블로그 관리 라우트를 테넌트 멤버십 역할로 인가한다 (브랜치 `fix/multi-tenant-blog-admin-auth`, develop `f6a6336` 에서 분기). 이전 판 기준은 `ae0710d`(2026-09-17), `a73dbb1`(2026-09-16)·`35a6d75`(0.2.3), 초판 기준은 `52d72e1` 이다 |
+| 기준 커밋 | fix(onboarding): OnboardingWizard 가 소유자 ID 를 prop 으로 받아 제출한다 (이 문서를 함께 갱신한 커밋), `4bbe3b0` fix(proxy): 테넌트 스코프 Prisma 에서 관계 필드의 중첩 쓰기를 거부한다, `2901539` fix(admin): 슈퍼 관리자 테넌트 수정 입력을 스키마로 검증하고 도메인 중복을 확인한다, `f1e65b7` fix(domain): 커스텀 도메인을 DNS 인증에 성공한 뒤에만 테넌트에 설정한다, `6b5d8df` fix(routes): billing·domain·tenant 테넌트 작업의 인가를 입력 검증보다 먼저 확인한다, `b410e60` fix(routes): multi 모드 블로그 관리 라우트를 테넌트 멤버십 역할로 인가한다 (브랜치 `fix/multi-tenant-blog-admin-auth`, develop `f6a6336` 에서 분기). 이전 판 기준은 `ae0710d`(2026-09-17), `a73dbb1`(2026-09-16)·`35a6d75`(0.2.3), 초판 기준은 `52d72e1` 이다 |
 | 환경 | Vitest 3.2.7, Node.js 22.22.0, pnpm 11.10.0. 테스트 환경은 `node`(vitest.config.ts 에 `environment` 미지정) |
 | 의존 선언 | dependencies `@withwiz/blog-core` `^2.1.5`, devDependencies `@withwiz/toolkit` `^0.15.0`(peerDependencies 는 `>=0.11.0`). `pnpm-workspace.yaml` 의 `minimumReleaseAgeExclude` 에 `@withwiz/blog-core@2.1.5`, `@withwiz/toolkit@0.15.0` 명시 |
 | 주요 설치본 | `@withwiz/toolkit` 0.15.0, `@withwiz/blog-core` 2.1.5(peer 해석으로 `@aws-sdk/client-s3` 3.1131.0 동반), `next` 16.3.4, `react` 19.3.0, `zod` 4.6.2, `stripe` 17.7.0 (`pnpm install --frozen-lockfile` 기준) |
@@ -25,7 +25,7 @@
 | 2026-09-15 | `35a6d75` (0.2.3) | 34개 파일, 318건 | `418cf97` 0.2.2 릴리즈(버전만 변경, `52d72e1` 의 오류 처리 변경을 게시), `7b2a048` blog-core 2.1.4·toolkit 0.15.0 의존 갱신(`@aws-sdk/client-s3` 3.1130.0 → 3.1131.0 동반), `46a004a` `BlogSystemConfig.sanitizeContent` 추가와 blog-core 서비스 전달(0.2.3). 새 테스트 `tests/blog-system-sanitize-content.test.ts` 7건을 SC-I-006, TC-I-007·TC-I-008 로 추가 |
 | 2026-09-16 | `a73dbb1` (브랜치 `fix/residual-defects`, 0.2.3) | 40개 파일, 381건 | `abc1010` blog-core 2.1.5 의존 갱신(범위 `^2.1.5`)과 BS-SC-08·09 추가, `bc3636e` tenant·billing·domain 라우트 인가, `cf48c45` OAuth state 검증과 미인증 이메일 연결 차단, `a32f993` 온보딩 샘플 게시글 본문 이스케이프, `2f488a5` 테넌트 프록시 누락 메서드 격리, `a73dbb1` X-Tenant-Id 헤더 불신과 테넌트 해석 단일화. 새 파일 6개(`tests/security/` 5개, `tests/api/` 1개) 61건과 기존 파일의 2건을 추가했다. 결함 확인용 TC-S-004~008 을 ✅ 완료로 전환하고 계획 TC TC-A-015 를 구현했으며, 결함 동작을 전제로 한 기존 테스트 18건의 전제·기대값·이름을 새 동작에 맞게 바꿨다 |
 | 2026-09-17 | `ae0710d` (브랜치 `fix/residual-defects`, 0.2.3) | 41개 파일, 391건 | `ae0710d` 관리·인증 라우트 래퍼를 toolkit `withAdminApi` 에서 `withAuthApi` 로 교체(admin 11, tenant 11, billing 7, domain 5, auth 3). 2026-09-16 판 [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)의 `withAdminApi` 역할 불일치를 해결로 옮겼다. 실제 toolkit 체인으로 검증하는 새 파일 `tests/integration/toolkit-wrapper-chain.test.ts` 10건을 SC-I-007, TC-I-009 로 추가했다. wrappers 목이 `withAdminApi` 만 제공하던 기존 파일 6개(TC-A-009~013, TC-S-007)의 목 이름을 `withAuthApi` 로 바꿨고 단언은 바꾸지 않았다 |
-| 2026-09-27 | `4bbe3b0` (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0) | 41개 파일, 441건 | `b410e60` multi 모드 블로그 관리 라우트 11개를 `withAuthApi` 와 테넌트 멤버십 인가(`requireTenantRole`, 조회 VIEWER·쓰기 EDITOR 이상)로 바꿨다. single 모드는 `withAdminApi` 를 유지한다. [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)의 테넌트 소속 검사 부재를 해결로 옮겼다. TC-A-015 에 BS-MT-07~15(24건)를 추가하고 BS-TH-01 에 멤버십 서비스와 단언 1개를 추가했다. `6b5d8df` billing·domain·tenant 테넌트 작업의 인가를 입력 검증 400·비활성 501 보다 앞으로 옮기고, TC-S-006 에 BS-AZ-23~26(4건)을 추가했다. `f1e65b7` 커스텀 도메인을 DNS 인증 성공 뒤에만 `customDomain` 에 설정하고 `updateSettings` 가 요청의 `domainVerification` 을 무시하게 했다. TC-U-016 에 BS-DS-11~17(7건)을, TC-U-003 에 BS-TS-17(1건)을 추가하고 BS-DS-10 을 인증 경로 기준으로 고쳤다. `2901539` 슈퍼 관리자 `tenants.update.PUT` 을 `UpdateTenantSchema` 로 검증하고 `customDomain` 형식 검증과 `tenantService.update` 의 도메인 중복 확인을 추가했다. TC-U-002 에 BS-TV-17·18, TC-U-003 에 BS-TS-18, TC-A-011 에 BS-AR-07~09 를 추가했다. `4bbe3b0` 테넌트 프록시가 관계 필드의 중첩 쓰기를 거부하게 하고 TC-S-004 에 BS-TX-12(7건)·13(1건)을 추가했다. 확인이 필요한 사항의 인가 순서·커스텀 도메인·슈퍼 관리자 입력 검증·프록시 중첩 쓰기 항목을 해결로 옮겼다. 새 파일은 없다 |
+| 2026-09-27 | `4bbe3b0` (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0) | 41개 파일, 441건 | `b410e60` multi 모드 블로그 관리 라우트 11개를 `withAuthApi` 와 테넌트 멤버십 인가(`requireTenantRole`, 조회 VIEWER·쓰기 EDITOR 이상)로 바꿨다. single 모드는 `withAdminApi` 를 유지한다. [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)의 테넌트 소속 검사 부재를 해결로 옮겼다. TC-A-015 에 BS-MT-07~15(24건)를 추가하고 BS-TH-01 에 멤버십 서비스와 단언 1개를 추가했다. `6b5d8df` billing·domain·tenant 테넌트 작업의 인가를 입력 검증 400·비활성 501 보다 앞으로 옮기고, TC-S-006 에 BS-AZ-23~26(4건)을 추가했다. `f1e65b7` 커스텀 도메인을 DNS 인증 성공 뒤에만 `customDomain` 에 설정하고 `updateSettings` 가 요청의 `domainVerification` 을 무시하게 했다. TC-U-016 에 BS-DS-11~17(7건)을, TC-U-003 에 BS-TS-17(1건)을 추가하고 BS-DS-10 을 인증 경로 기준으로 고쳤다. `2901539` 슈퍼 관리자 `tenants.update.PUT` 을 `UpdateTenantSchema` 로 검증하고 `customDomain` 형식 검증과 `tenantService.update` 의 도메인 중복 확인을 추가했다. TC-U-002 에 BS-TV-17·18, TC-U-003 에 BS-TS-18, TC-A-011 에 BS-AR-07~09 를 추가했다. `4bbe3b0` 테넌트 프록시가 관계 필드의 중첩 쓰기를 거부하게 하고 TC-S-004 에 BS-TX-12(7건)·13(1건)을 추가했다. OnboardingWizard 에 필수 prop `ownerUserId` 를 추가해 빈 값 제출(400)을 고쳤고, 렌더링 인프라가 없어 테스트는 추가하지 않았다(TC-E-001 기대값 갱신). 확인이 필요한 사항의 인가 순서·커스텀 도메인·슈퍼 관리자 입력 검증·프록시 중첩 쓰기 항목을 해결로 옮겼다. 새 파일은 없다 |
 
 ### 분류 기준
 
@@ -1470,16 +1470,16 @@ pnpm exec vitest run \
 | **전제조건** | 컴포넌트 공통 전제조건 1~3, `globalThis.fetch` 를 `createSuperAdminRoutes(…, onboardingService).onboarding.create.POST` 로 연결하는 어댑터(요청 body 로 컨텍스트 생성, user `{ id: 'owner-1', role: 'SUPER_ADMIN' }`), `withAuthApi` 통과형 모킹, `onboardingService.onboardTenant = vi.fn()` |
 | **테스트 데이터** | 이름 `'My Blog'`, 기본 카테고리 2건, 샘플 게시글 생성 선택 |
 
-| # | 단계 | 예상 결과 (현재 코드 기준) |
+| # | 단계 | 예상 결과 (2026-09-27 이후 코드 기준) |
 |---|------|---------|
-| 1 | 1~4단계를 진행한 뒤 `'블로그 생성'` 클릭 | 어댑터가 받은 `body.ownerUserId === ''` |
-| 2 | 라우트 처리 결과 | 400 `'tenantName, tenantSlug, ownerUserId는 필수입니다.'` |
-| 3 | 위저드 화면 | 오류 배너에 같은 문구, `onComplete` 미호출 |
-| 4 | 서비스 호출 확인 | `onboardingService.onboardTenant` 미호출 |
-| 5 | 비교: 어댑터가 `body.ownerUserId` 를 `context.user.id` 로 채워 전달 | 201, `onComplete` 호출 |
+| 1 | `ownerUserId="user-9"` 로 렌더링하고 1~4단계를 진행한 뒤 `'블로그 생성'` 클릭 | 어댑터가 받은 `body.ownerUserId === 'user-9'` |
+| 2 | 라우트 처리 결과 | 201, `onboardingService.onboardTenant` 에 `ownerUserId: 'user-9'` 전달 |
+| 3 | 위저드 화면 | `onComplete(result)` 호출 |
+| 4 | `ownerUserId=""` 로 렌더링해 제출 | 400 `'tenantName, tenantSlug, ownerUserId는 필수입니다.'`, 오류 배너에 같은 문구, `onComplete`·`onboardTenant` 미호출 |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 0개 (계획)
-- **비고:** 위저드 코드 주석은 `ownerUserId` 를 "서버에서 현재 사용자로 설정"한다고 설명하지만 라우트는 `!body.ownerUserId` 검사로 빈 문자열을 거부한다. 호스트 어댑터가 채워야 하는 값인지 라우트 결함인지 결정이 필요하다.
+- **비고:** 위저드는 슈퍼 관리자 콘솔 도구이며, 새 테넌트 소유자는 호스트가 필수 prop `ownerUserId` 로 넘긴다. 라우트 계약(`ownerUserId` 필수, 슈퍼 관리자 전용)은 바뀌지 않았다.
+- **결함 이력:** 2026-09-27 이전의 위저드는 `ownerUserId: ''` 를 "서버에서 현재 사용자로 설정"한다는 주석과 함께 제출했지만, 라우트는 `!body.ownerUserId` 검사로 빈 문자열을 400 으로 거부해 제출이 항상 실패했다(2026-09-16 임시 테스트로 확인). 렌더링 인프라가 없어 회귀 테스트는 없다.
 
 ---
 
@@ -2049,7 +2049,7 @@ pnpm exec vitest run \
 | High | SC-A-013 | 슈퍼 관리자 라우트 미검증 분기 (TC-A-016) | 없음 |
 | High | SC-A-014 | 인증 라우트 입력 검증과 OAuth 분기 (TC-A-017) | 없음 |
 | High | SC-A-015 | 과금 라우트 웹훅 서명·관리자 요금제·BigInt 직렬화 (TC-A-018) | 호스트 스키마의 BigInt 사용 여부 확인 |
-| High | SC-E-001 | OnboardingWizard 와 온보딩 라우트 계약 (TC-E-001) | 렌더링 인프라, ownerUserId 계약 결정 |
+| High | SC-E-001 | OnboardingWizard 와 온보딩 라우트 계약 (TC-E-001) | 렌더링 인프라 (ownerUserId 계약은 2026-09-27 에 필수 prop 으로 확정) |
 | High | SC-AC-001 | 관리자 목록·폼 입력 요소 이름과 오류 알림 (TC-AC-001) | 렌더링 인프라, axe-core 기반 도구 |
 | High | SC-AC-002 | 온보딩 위저드 단계·선택 상태 전달 (TC-AC-002) | 렌더링 인프라, axe-core 기반 도구 |
 | High | SC-SM-001 | dist exports 서브패스 해석 (TC-SM-001) | `pnpm run build` |
@@ -2087,7 +2087,7 @@ pnpm exec vitest run \
 
 필요한 인프라는 jsdom(또는 happy-dom)과 `@testing-library/react` 추가, `include` 확장, 컴포넌트 테스트 파일별 `// @vitest-environment jsdom` 명시, 접근성 검사를 위한 axe-core 기반 도구 추가이다. 코드를 읽는 과정에서 테스트로 고정해야 할 동작도 확인했다.
 
-- OnboardingWizard 는 `ownerUserId: ''` 로 제출하지만 슈퍼 관리자 온보딩 라우트는 빈 값을 400 으로 거부한다(TC-E-001). 2026-09-16 에 위저드와 같은 본문으로 `onboarding.create.POST` 를 임시 테스트로 다시 실행해 400 `'tenantName, tenantSlug, ownerUserId는 필수입니다.'` 와 `onboardTenant` 미호출을 확인했다(수정하지 않음).
+- ~~OnboardingWizard 는 `ownerUserId: ''` 로 제출하지만 슈퍼 관리자 온보딩 라우트는 빈 값을 400 으로 거부한다~~ → 2026-09-27 에 필수 prop `ownerUserId` 를 추가해 고쳤다(TC-E-001). 회귀 테스트는 렌더링 인프라가 생기면 추가한다.
 - OnboardingWizard 의 슬러그 생성은 한글을 허용하지만 `CreateTenantSchema` 는 영소문자·숫자·하이픈만 허용하며, 온보딩 경로에는 스키마 검증이 없다(TC-U-022).
 - TenantManager 의 활성 상태 변경은 응답 본문을 확인하지 않아 실패를 표시하지 않는다(TC-U-020).
 - SuperAdminDashboard·SystemMonitor 의 시스템 상태 문구는 실제 점검 결과가 아닌 고정 문구이다(TC-U-018).
