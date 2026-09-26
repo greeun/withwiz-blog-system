@@ -1,6 +1,6 @@
 # @withwiz/blog-system 테스트 분류 체계
 
-> 작성일: 2026-09-13. 갱신일: 2026-09-27 (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0 에 multi 모드 블로그 관리 라우트 인가, 인가 순서 변경, 커스텀 도메인 인증 후 활성화, 슈퍼 관리자 테넌트 수정 검증 반영). 이 문서는 `tests/spec.md`(구현 작업 계획서)를 대신하는 현행 분류 문서이다. 모든 수치와 케이스는 기준 커밋에서 테스트를 실행하고 코드를 읽어 확인한 값만 기재했다.
+> 작성일: 2026-09-13. 갱신일: 2026-09-27 (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0 에 multi 모드 블로그 관리 라우트 인가, 인가 순서 변경, 커스텀 도메인 인증 후 활성화, 슈퍼 관리자 테넌트 수정 검증, 프록시 중첩 쓰기 거부 반영). 이 문서는 `tests/spec.md`(구현 작업 계획서)를 대신하는 현행 분류 문서이다. 모든 수치와 케이스는 기준 커밋에서 테스트를 실행하고 코드를 읽어 확인한 값만 기재했다.
 
 ## 개요
 
@@ -8,14 +8,14 @@
 |------|------|
 | 대상 | `@withwiz/blog-system` 0.2.3: 단일·멀티 테넌트 블로그 SaaS 프레임워크. 2026-09-17 판은 0.2.3 에 결함 수정 6건과 blog-core 2.1.5 의존 갱신을 더한 브랜치 `fix/residual-defects` 기준이며 버전은 올리지 않았다 |
 | 범위 | `src/` 전체(core/, tenant/, auth/, billing/, onboarding/, routes/, admin/, validators/, types/)와 `tests/` 아래 테스트 파일 41개 |
-| 기준 커밋 | `2901539` fix(admin): 슈퍼 관리자 테넌트 수정 입력을 스키마로 검증하고 도메인 중복을 확인한다, `f1e65b7` fix(domain): 커스텀 도메인을 DNS 인증에 성공한 뒤에만 테넌트에 설정한다, `6b5d8df` fix(routes): billing·domain·tenant 테넌트 작업의 인가를 입력 검증보다 먼저 확인한다, `b410e60` fix(routes): multi 모드 블로그 관리 라우트를 테넌트 멤버십 역할로 인가한다 (브랜치 `fix/multi-tenant-blog-admin-auth`, develop `f6a6336` 에서 분기). 이전 판 기준은 `ae0710d`(2026-09-17), `a73dbb1`(2026-09-16)·`35a6d75`(0.2.3), 초판 기준은 `52d72e1` 이다 |
+| 기준 커밋 | `4bbe3b0` fix(proxy): 테넌트 스코프 Prisma 에서 관계 필드의 중첩 쓰기를 거부한다, `2901539` fix(admin): 슈퍼 관리자 테넌트 수정 입력을 스키마로 검증하고 도메인 중복을 확인한다, `f1e65b7` fix(domain): 커스텀 도메인을 DNS 인증에 성공한 뒤에만 테넌트에 설정한다, `6b5d8df` fix(routes): billing·domain·tenant 테넌트 작업의 인가를 입력 검증보다 먼저 확인한다, `b410e60` fix(routes): multi 모드 블로그 관리 라우트를 테넌트 멤버십 역할로 인가한다 (브랜치 `fix/multi-tenant-blog-admin-auth`, develop `f6a6336` 에서 분기). 이전 판 기준은 `ae0710d`(2026-09-17), `a73dbb1`(2026-09-16)·`35a6d75`(0.2.3), 초판 기준은 `52d72e1` 이다 |
 | 환경 | Vitest 3.2.7, Node.js 22.22.0, pnpm 11.10.0. 테스트 환경은 `node`(vitest.config.ts 에 `environment` 미지정) |
 | 의존 선언 | dependencies `@withwiz/blog-core` `^2.1.5`, devDependencies `@withwiz/toolkit` `^0.15.0`(peerDependencies 는 `>=0.11.0`). `pnpm-workspace.yaml` 의 `minimumReleaseAgeExclude` 에 `@withwiz/blog-core@2.1.5`, `@withwiz/toolkit@0.15.0` 명시 |
 | 주요 설치본 | `@withwiz/toolkit` 0.15.0, `@withwiz/blog-core` 2.1.5(peer 해석으로 `@aws-sdk/client-s3` 3.1131.0 동반), `next` 16.3.4, `react` 19.3.0, `zod` 4.6.2, `stripe` 17.7.0 (`pnpm install --frozen-lockfile` 기준) |
 | 수집 규칙 | `tests/**/*.test.ts` 만 수집(`.tsx` 테스트는 수집 대상이 아님), `setupFiles` 없음 |
 | 렌더링 인프라 | 없음. jsdom·happy-dom·@testing-library 가 devDependencies 와 node_modules 에 존재하지 않음 |
 | 목표 커버리지 | 미설정. vitest.config.ts 에 coverage 설정이 없고 `@vitest/coverage-*` 패키지도 설치되어 있지 않아 커버리지는 실측하지 못했다 |
-| 실측 결과 | 파일 41개, 테스트 433개: 통과 433, 실패 0, 스킵 0 (`npx vitest run`, 2026-09-27) |
+| 실측 결과 | 파일 41개, 테스트 441개: 통과 441, 실패 0, 스킵 0 (`npx vitest run`, 2026-09-27) |
 
 ### 문서 갱신 이력
 
@@ -25,7 +25,7 @@
 | 2026-09-15 | `35a6d75` (0.2.3) | 34개 파일, 318건 | `418cf97` 0.2.2 릴리즈(버전만 변경, `52d72e1` 의 오류 처리 변경을 게시), `7b2a048` blog-core 2.1.4·toolkit 0.15.0 의존 갱신(`@aws-sdk/client-s3` 3.1130.0 → 3.1131.0 동반), `46a004a` `BlogSystemConfig.sanitizeContent` 추가와 blog-core 서비스 전달(0.2.3). 새 테스트 `tests/blog-system-sanitize-content.test.ts` 7건을 SC-I-006, TC-I-007·TC-I-008 로 추가 |
 | 2026-09-16 | `a73dbb1` (브랜치 `fix/residual-defects`, 0.2.3) | 40개 파일, 381건 | `abc1010` blog-core 2.1.5 의존 갱신(범위 `^2.1.5`)과 BS-SC-08·09 추가, `bc3636e` tenant·billing·domain 라우트 인가, `cf48c45` OAuth state 검증과 미인증 이메일 연결 차단, `a32f993` 온보딩 샘플 게시글 본문 이스케이프, `2f488a5` 테넌트 프록시 누락 메서드 격리, `a73dbb1` X-Tenant-Id 헤더 불신과 테넌트 해석 단일화. 새 파일 6개(`tests/security/` 5개, `tests/api/` 1개) 61건과 기존 파일의 2건을 추가했다. 결함 확인용 TC-S-004~008 을 ✅ 완료로 전환하고 계획 TC TC-A-015 를 구현했으며, 결함 동작을 전제로 한 기존 테스트 18건의 전제·기대값·이름을 새 동작에 맞게 바꿨다 |
 | 2026-09-17 | `ae0710d` (브랜치 `fix/residual-defects`, 0.2.3) | 41개 파일, 391건 | `ae0710d` 관리·인증 라우트 래퍼를 toolkit `withAdminApi` 에서 `withAuthApi` 로 교체(admin 11, tenant 11, billing 7, domain 5, auth 3). 2026-09-16 판 [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)의 `withAdminApi` 역할 불일치를 해결로 옮겼다. 실제 toolkit 체인으로 검증하는 새 파일 `tests/integration/toolkit-wrapper-chain.test.ts` 10건을 SC-I-007, TC-I-009 로 추가했다. wrappers 목이 `withAdminApi` 만 제공하던 기존 파일 6개(TC-A-009~013, TC-S-007)의 목 이름을 `withAuthApi` 로 바꿨고 단언은 바꾸지 않았다 |
-| 2026-09-27 | `2901539` (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0) | 41개 파일, 433건 | `b410e60` multi 모드 블로그 관리 라우트 11개를 `withAuthApi` 와 테넌트 멤버십 인가(`requireTenantRole`, 조회 VIEWER·쓰기 EDITOR 이상)로 바꿨다. single 모드는 `withAdminApi` 를 유지한다. [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)의 테넌트 소속 검사 부재를 해결로 옮겼다. TC-A-015 에 BS-MT-07~15(24건)를 추가하고 BS-TH-01 에 멤버십 서비스와 단언 1개를 추가했다. `6b5d8df` billing·domain·tenant 테넌트 작업의 인가를 입력 검증 400·비활성 501 보다 앞으로 옮기고, TC-S-006 에 BS-AZ-23~26(4건)을 추가했다. `f1e65b7` 커스텀 도메인을 DNS 인증 성공 뒤에만 `customDomain` 에 설정하고 `updateSettings` 가 요청의 `domainVerification` 을 무시하게 했다. TC-U-016 에 BS-DS-11~17(7건)을, TC-U-003 에 BS-TS-17(1건)을 추가하고 BS-DS-10 을 인증 경로 기준으로 고쳤다. `2901539` 슈퍼 관리자 `tenants.update.PUT` 을 `UpdateTenantSchema` 로 검증하고 `customDomain` 형식 검증과 `tenantService.update` 의 도메인 중복 확인을 추가했다. TC-U-002 에 BS-TV-17·18, TC-U-003 에 BS-TS-18, TC-A-011 에 BS-AR-07~09 를 추가했다. 확인이 필요한 사항의 인가 순서·커스텀 도메인·슈퍼 관리자 입력 검증 항목을 해결로 옮겼다. 새 파일은 없다 |
+| 2026-09-27 | `4bbe3b0` (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0) | 41개 파일, 441건 | `b410e60` multi 모드 블로그 관리 라우트 11개를 `withAuthApi` 와 테넌트 멤버십 인가(`requireTenantRole`, 조회 VIEWER·쓰기 EDITOR 이상)로 바꿨다. single 모드는 `withAdminApi` 를 유지한다. [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)의 테넌트 소속 검사 부재를 해결로 옮겼다. TC-A-015 에 BS-MT-07~15(24건)를 추가하고 BS-TH-01 에 멤버십 서비스와 단언 1개를 추가했다. `6b5d8df` billing·domain·tenant 테넌트 작업의 인가를 입력 검증 400·비활성 501 보다 앞으로 옮기고, TC-S-006 에 BS-AZ-23~26(4건)을 추가했다. `f1e65b7` 커스텀 도메인을 DNS 인증 성공 뒤에만 `customDomain` 에 설정하고 `updateSettings` 가 요청의 `domainVerification` 을 무시하게 했다. TC-U-016 에 BS-DS-11~17(7건)을, TC-U-003 에 BS-TS-17(1건)을 추가하고 BS-DS-10 을 인증 경로 기준으로 고쳤다. `2901539` 슈퍼 관리자 `tenants.update.PUT` 을 `UpdateTenantSchema` 로 검증하고 `customDomain` 형식 검증과 `tenantService.update` 의 도메인 중복 확인을 추가했다. TC-U-002 에 BS-TV-17·18, TC-U-003 에 BS-TS-18, TC-A-011 에 BS-AR-07~09 를 추가했다. `4bbe3b0` 테넌트 프록시가 관계 필드의 중첩 쓰기를 거부하게 하고 TC-S-004 에 BS-TX-12(7건)·13(1건)을 추가했다. 확인이 필요한 사항의 인가 순서·커스텀 도메인·슈퍼 관리자 입력 검증·프록시 중첩 쓰기 항목을 해결로 옮겼다. 새 파일은 없다 |
 
 ### 분류 기준
 
@@ -1509,7 +1509,7 @@ pnpm exec vitest run \
 
 **목적:** 멀티 테넌트 SaaS 의 핵심 보안 경계인 테넌트 데이터 격리와 역할 기반 인가를 검증한다. OWASP Top 10 2021 기준으로 주로 A01 Broken Access Control 에 해당하며, OAuth 계정 연결(A07)과 저장 HTML 입력값 삽입(A03)을 포함한다.
 
-**실행 명령:** 아래 명령의 실측 결과는 8개 파일, 101개 통과이다.
+**실행 명령:** 아래 명령의 실측 결과는 8개 파일, 109개 통과이다.
 
 ```bash
 pnpm exec vitest run \
@@ -1622,9 +1622,11 @@ pnpm exec vitest run \
 | 9 | BS-TX-09: `$transaction([promise])` (배열형) | 예외(메시지에 `콜백`), 원본 `$transaction` 미호출 |
 | 10 | BS-TX-10: 콜백형 `$transaction(fn, options)` | 원본 두 번째 인자가 `options`, tx 의 `createMany` 에 `tenantId` 주입, tx 의 `$queryRawUnsafe` 는 예외 |
 | 11 | BS-TX-11: 스코프 서비스 `create(…, tagIds ['tag-1'])` 후 `update('post-1', { tagIds: ['tag-2'] })` | `news.create` data, `postTag.createMany` 두 번의 모든 항목, `postTag.deleteMany` where 에 `tenantId 'tenant-001'` |
+| 12 | BS-TX-12: 관계 필드 중첩 쓰기 7가지(`create` 의 `tags.create`·`author.connect`, `createMany` 항목의 `tags.connectOrCreate`, `update` 의 `tags.set` 배열, `updateMany` 의 `author.disconnect`, `upsert` 의 `create.tags.create`·`update.tags.deleteMany`) (7건) | 모두 `'중첩 쓰기는 격리를 보장할 수 없습니다'` 동기 예외, 원본 delegate 메서드 미호출 |
+| 13 | BS-TX-13: `update` data 에 `title.set` 문자열, `viewCount.increment`, `Date`, Json 값(`blocks`, `meta: { create: 문자열, source }`) / `create` 에 빈 객체 Json | 둘 다 원본 1회 호출 (중첩 쓰기로 판정하지 않음) |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 11개 (2026-09-16 실측)
-- **비고:** 스코프 클라이언트로 접근하는 모든 모델을 `tenantId` 컬럼이 있는 테넌트 소유 모델로 취급한다. blog-core 참조 스키마(`prisma/blog.prisma`)의 `PostTag` 에는 `tenantId` 가 없으므로, multi 모드에서 태그를 쓰는 호스트는 `postTag` 모델에 `tenantId` 를 추가해야 한다. 0.2.3 에서도 update 경로의 `postTag.deleteMany` 에 tenantId 가 주입되어 같은 조건이 필요했다. 격리는 최상위 `where`·`data`·`create` 에만 적용하며, 관계 필드의 중첩 쓰기와 `include` 로 읽는 관계 모델은 대상이 아니다([확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)). 거부는 원본을 호출하기 전에 동기 예외로 일어난다. 거부 대상 클라이언트 함수는 원본 클라이언트에 함수로 존재할 때만 거부 함수로 바뀌고, 없으면 `undefined` 를 그대로 돌려준다.
+- **자동화:** 가능 ✅ | **테스트 수:** 19개 (2026-09-27 실측)
+- **비고:** 스코프 클라이언트로 접근하는 모든 모델을 `tenantId` 컬럼이 있는 테넌트 소유 모델로 취급한다. blog-core 참조 스키마(`prisma/blog.prisma`)의 `PostTag` 에는 `tenantId` 가 없으므로, multi 모드에서 태그를 쓰는 호스트는 `postTag` 모델에 `tenantId` 를 추가해야 한다. 0.2.3 에서도 update 경로의 `postTag.deleteMany` 에 tenantId 가 주입되어 같은 조건이 필요했다. 격리는 최상위 `where`·`data`·`create` 에만 적용한다. 2026-09-27 `4bbe3b0` 부터 생성·변경·upsert 의 data 필드 값이 중첩 쓰기 연산(`create`·`createMany`·`connect`·`connectOrCreate`·`disconnect`·`delete`·`deleteMany`·`update`·`updateMany`·`upsert`, 값이 객체·배열인 `set`)으로만 이루어진 객체이면 거부한다. Json 컬럼 값도 모든 키가 연산 이름이면 거부되는 제약이 있다. `include`·`select` 로 읽는 관계 모델과 스칼라 외래 키(예: `tagId`)가 다른 테넌트 레코드를 가리키는지는 확인하지 않는다. 수정 전 코드에서 BS-TX-12 7건이 실패했고 BS-TX-13 은 통과했다. 거부는 원본을 호출하기 전에 동기 예외로 일어난다. 거부 대상 클라이언트 함수는 원본 클라이언트에 함수로 존재할 때만 거부 함수로 바뀌고, 없으면 `undefined` 를 그대로 돌려준다.
 - **결함 이력:** 2026-09-13·09-15 판에서는 결함 확인용 🔲 계획 TC 였다. 0.2.3 의 프록시는 `READ_METHODS`(findMany·findFirst·findUnique·count·groupBy), `create`, `MUTATE_METHODS`(update·delete·updateMany·deleteMany)만 가로채고 나머지 함수는 `original.bind(del)` 로 그대로 호출했다. 그래서 `upsert` 의 where·create 와 `aggregate`·`createMany`·`findUniqueOrThrow`·`findFirstOrThrow` 에 tenantId 가 주입되지 않았고, `$queryRawUnsafe` 는 원본이 그대로 호출되었으며, 배열형 `$transaction` 은 배열을 콜백으로 호출해 TypeError 로 reject 되었다. blog-core 태그 동기화에서는 `postTag.deleteMany` 에만 tenantId 가 주입되고 `postTag.createMany` 에는 주입되지 않았다. update 계열 data 의 `tenantId` 변경도 막지 않았고, 콜백형 `$transaction` 의 옵션은 원본에 전달되지 않았다. 2026-09-16 `2f488a5` 에서 메서드 분류를 확장하고 격리할 수 없는 호출을 거부하도록 고쳤다. 수정 전 실행에서 1번을 제외한 10건이 실패했고, 1번은 기존에 보장되던 동작을 확인하는 테스트라 통과했다.
 - **관련 요구사항:** OWASP A01:2021 Broken Access Control
 
@@ -1931,20 +1933,20 @@ pnpm exec vitest run \
 | **Integration** | 5개 | 34개 | 7 (4/3) | 9 (6/3) | +3개 |
 | **API** | 12개 | 124개 | 16 (11/5) | 19 (14/5) | +5개 |
 | **E2E** | 0개 | 0개 | 2 (0/2) | 2 (0/2) | +2개 |
-| **Security** | 8개 | 101개 | 8 (8/0) | 8 (8/0) | 없음 |
+| **Security** | 8개 | 109개 | 8 (8/0) | 8 (8/0) | 없음 |
 | **Performance** | 0개 | 0개 | 1 (0/1) | 1 (0/1) | +1개 |
 | **Accessibility** | 0개 | 0개 | 3 (0/3) | 3 (0/3) | +3개 |
 | **Smoke** | 0개 | 0개 | 2 (0/2) | 2 (0/2) | +2개 |
 | **Load/Stress** | 0개 | 0개 | 0 | 0 | 없음 |
 | **Chaos** | 0개 | 0개 | 0 | 0 | 없음 |
-| **합계** | **41개** | **433개** | **55 (35/20)** | **68 (44/24)** | **+24개** |
+| **합계** | **41개** | **441개** | **55 (35/20)** | **68 (44/24)** | **+24개** |
 
 - 계획 TC 의 테스트 수는 추측하지 않고 0개로 기재했다. 구현 후 실측값으로 갱신한다.
-- 파일 누락 대조: `find tests -name "*.test.ts"` 결과 41개와 이 문서의 도메인별 실행 명령에 포함된 파일 41개를 비교한 결과, 누락 0개와 중복 배정 0개를 확인했다. 도메인별 실행 결과의 합(174 + 34 + 124 + 101)도 전체 실행 결과 433과 일치한다(2026-09-27 실측).
+- 파일 누락 대조: `find tests -name "*.test.ts"` 결과 41개와 이 문서의 도메인별 실행 명령에 포함된 파일 41개를 비교한 결과, 누락 0개와 중복 배정 0개를 확인했다. 도메인별 실행 결과의 합(174 + 34 + 124 + 109)도 전체 실행 결과 441과 일치한다(2026-09-27 실측).
 - 2026-09-15 갱신에서 🔲 계획 TC 가운데 새 테스트로 완료된 항목은 없다. `tests/blog-system-sanitize-content.test.ts` 는 기존 계획 TC 의 단계와 겹치지 않아 SC-I-006, TC-I-007·TC-I-008 을 새로 추가했다. 완료 TC 35개는 모두 실제 테스트 파일과 기존 ID 가 존재하고 테스트 수가 실측과 일치함을 다시 대조했다.
 - 2026-09-16 갱신에서 결함 확인용 TC-S-004~008 을 ✅ 완료로 전환하고 계획 TC 인 TC-A-015 를 구현했다. 새 파일 6개(61건)와 기존 파일에 추가한 BS-SC-08·09(2건)는 모두 기존 SC·TC 에 배정했으며 새 SC·TC 는 없다. 완료 TC 43개의 테스트 수를 실측과 다시 대조했다.
 - 2026-09-17 갱신에서 `withAdminApi` 역할 불일치 수정의 회귀 테스트 파일 1개(10건)를 새 SC-I-007, TC-I-009 로 추가했다. 기존 계획 TC 가운데 이 파일로 완료된 항목은 없다. 래퍼 교체로 목 이름만 바꾼 기존 파일 6개는 테스트 수가 바뀌지 않았다. 완료 TC 44개의 테스트 수를 실측과 다시 대조했다.
-- 2026-09-27 갱신에서 multi 모드 블로그 관리 라우트 인가의 회귀 테스트 24건(BS-MT-07~15)을 기존 TC-A-015 에, 인가 순서 회귀 테스트 4건(BS-AZ-23~26)을 기존 TC-S-006 에, 커스텀 도메인 인증 후 활성화 회귀 테스트 8건(BS-DS-11~17, BS-TS-17)을 기존 TC-U-016·TC-U-003 에, 슈퍼 관리자 테넌트 수정 검증 회귀 테스트 6건(BS-TV-17·18, BS-TS-18, BS-AR-07~09)을 기존 TC-U-002·TC-U-003·TC-A-011 에 추가했다. 새 파일·SC·TC 는 없다. BS-TH-01 은 테스트 수가 바뀌지 않았다.
+- 2026-09-27 갱신에서 multi 모드 블로그 관리 라우트 인가의 회귀 테스트 24건(BS-MT-07~15)을 기존 TC-A-015 에, 인가 순서 회귀 테스트 4건(BS-AZ-23~26)을 기존 TC-S-006 에, 커스텀 도메인 인증 후 활성화 회귀 테스트 8건(BS-DS-11~17, BS-TS-17)을 기존 TC-U-016·TC-U-003 에, 슈퍼 관리자 테넌트 수정 검증 회귀 테스트 6건(BS-TV-17·18, BS-TS-18, BS-AR-07~09)을 기존 TC-U-002·TC-U-003·TC-A-011 에, 프록시 중첩 쓰기 거부 회귀 테스트 8건(BS-TX-12·13)을 기존 TC-S-004 에 추가했다. 새 파일·SC·TC 는 없다. BS-TH-01 은 테스트 수가 바뀌지 않았다.
 
 ---
 
@@ -1993,7 +1995,7 @@ pnpm exec vitest run \
 | BS-TP-01~19 | `tests/tenant-proxy.test.ts` | 19 | TC-S-001 | SC-S-001 | Task 2 (01~14 만 수록) |
 | RBAC-01~18 | `tests/unit/rbac-edge-cases.test.ts` | 18 | TC-S-002 | SC-S-002 | 미수록 |
 | BS-RM-01, 02, 03, 03b, 04 | `tests/role-middleware.test.ts` | 5 | TC-S-003 | SC-S-003 | Task 9 (03b 미수록) |
-| BS-TX-01~11 | `tests/security/tenant-proxy-bypass.test.ts` | 11 | TC-S-004 | SC-S-004 | 미수록 |
+| BS-TX-01~13 | `tests/security/tenant-proxy-bypass.test.ts` | 19 | TC-S-004 | SC-S-004 | 미수록 |
 | BS-TH-01~08 | `tests/security/tenant-header-trust.test.ts` | 8 | TC-S-005 | SC-S-005 | 미수록 |
 | BS-AZ-01~26 | `tests/security/admin-route-authorization.test.ts` | 26 | TC-S-006 | SC-S-006 | 미수록 |
 | BS-OA-01~11 | `tests/security/oauth-callback.test.ts` | 11 | TC-S-007 | SC-S-007 | 미수록 |
@@ -2022,7 +2024,7 @@ pnpm exec vitest run \
 | API | 적용 | 라우트 9종이 `create*Routes` 팩토리로 핸들러를 반환하므로(scheduler 라우트는 blog-core 재export) Request 기반 계약 검증이 가능하다 | 12 / 124 | SC-A-001~016 |
 | Integration | 적용 | `createBlogSystem` 이 mode·billing·domain·features 설정에 따라 서비스·라우트·미들웨어를 조립하는 분기가 있고, `storage`·`sanitizeContent` 같은 호스트 설정을 blog-core 서비스에 전달한다. 라우트는 toolkit 미들웨어 체인과 blog-system 인가 헬퍼를 함께 거치므로 두 계층의 역할 체계가 맞는지는 조립 상태에서만 확인할 수 있다 | 5 / 34 | SC-I-001~007 |
 | E2E | 제한적 | 호스트 앱이 없어 브라우저 여정은 범위 밖이며, 동봉된 클라이언트 모듈(OnboardingWizard, createAuthFetch)과 서버 라우트 사이의 계약으로 한정한다 | 0 / 0 | SC-E-001~002 |
-| Security | 적용(우선) | `createTenantProxy` 의 tenantId 주입과 격리 불가 호출 거부, `ROLE_LEVELS` 기반 인가, 관리 라우트의 슈퍼 관리자·테넌트 소속 인가, 호스트명 기반 테넌트 해석이 멀티 테넌트 격리의 핵심 경로이다 | 8 / 101 | SC-S-001~008 |
+| Security | 적용(우선) | `createTenantProxy` 의 tenantId 주입과 격리 불가 호출 거부, `ROLE_LEVELS` 기반 인가, 관리 라우트의 슈퍼 관리자·테넌트 소속 인가, 호스트명 기반 테넌트 해석이 멀티 테넌트 격리의 핵심 경로이다 | 8 / 109 | SC-S-001~008 |
 | Accessibility | 적용, 0건 | 관리자 컴포넌트 4종과 OnboardingWizard 를 `./admin`, `./onboarding` 으로 export 하지만 렌더링 인프라와 테스트가 모두 없다 | 0 / 0 | SC-AC-001~003 |
 | Performance | 제한적 | 대량 처리 루프가 없고 쿼리 성능은 호스트 DB 책임이며, 패키지 내부에서는 프록시 접근 비용 정도만 측정할 수 있다 | 0 / 0 | SC-P-001 |
 | Load/Stress | 미적용 | 부하를 가할 서버와 DB 가 패키지에 없다 (아래 재검토 후보 참조) | 0 / 0 | 없음 |
@@ -2153,7 +2155,7 @@ pnpm exec vitest run \
 다음 항목은 2026-09-16·09-17 결함 수정 중에 코드를 읽어 확인했으며 이번에는 고치지 않았다.
 
 - **single 모드 블로그·태그·댓글 관리자 라우트에 남은 `withAdminApi` 고정 역할**: 2026-09-27 `b410e60` 에서 multi 모드 블로그 관리 라우트는 테넌트 멤버십 인가로 바꿨다(TC-A-015). `createBlogRoutes` single 모드와 `createTagRoutes`·`createCommentRoutes`(single 모드 전용)의 관리자 경로는 여전히 `withAdminApi` 이므로 JWT 역할이 `'ADMIN'` 이어야 한다. single 모드 호스트(dts-ballet-homepage)는 `Role` enum 에 `ADMIN` 이 있고 이 라우트들을 `'ADMIN'` 역할 토큰으로 사용하므로 그대로 두었다.
-- **스코프 프록시의 중첩 쓰기**: `createTenantProxy` 는 최상위 `where`·`data`·`create` 에만 tenantId 를 적용한다. 관계 필드의 중첩 `create`·`connect` 와 `include` 로 읽는 관계 모델에는 적용하지 않는다. blog-core 서비스는 태그를 `postTag.createMany` 로 따로 쓰므로 현재 경로에는 해당하지 않는다(TC-S-004).
+- **스코프 프록시의 `include`·스칼라 외래 키**: `createTenantProxy` 는 `include`·`select` 로 읽는 관계 모델에 tenantId 를 적용하지 않고, 스칼라 외래 키가 같은 테넌트 레코드를 가리키는지 확인하지 않는다. 관계 필드의 중첩 쓰기는 2026-09-27 `4bbe3b0` 에서 거부하도록 바꿨다(TC-S-004 BS-TX-12·13). 예를 들어 `postTag.createMany` 의 `tagId` 가 같은 테넌트의 태그인지는 프록시가 확인하지 않는다(blog-core 서비스의 확인 여부는 이번에 확인하지 않았다).
 
 ---
 

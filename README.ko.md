@@ -410,10 +410,18 @@ export async function getCurrentTenantId() {
 
 | 메서드 | 주입 위치 |
 |---|---|
-| `findMany`, `findFirst`, `findUnique`, `count`, `groupBy` | `where.tenantId = X` |
-| `create` | `data.tenantId = X` |
-| `update`, `updateMany`, `delete`, `deleteMany` | `where.tenantId = X` |
-| `$transaction` | 트랜잭션 내부 `tx` 객체도 동일하게 프록시 |
+| `findMany`, `findFirst`, `findFirstOrThrow`, `findUnique`, `findUniqueOrThrow`, `count`, `aggregate`, `groupBy` | `where.tenantId = X` |
+| `create`, `createMany`, `createManyAndReturn` | `data.tenantId = X` (배열이면 모든 항목) |
+| `update`, `updateMany`, `updateManyAndReturn`, `delete`, `deleteMany` | `where.tenantId = X` (변경 data 로 다른 테넌트로 옮기면 거부) |
+| `upsert` | `where.tenantId = X`, `create.tenantId = X` |
+| `$transaction` | 콜백형만 지원하며 트랜잭션 내부 `tx` 객체도 동일하게 프록시 |
+
+격리를 보장할 수 없는 호출은 원본을 호출하지 않고 예외로 거부한다.
+
+- 원시 쿼리(`$queryRaw`·`$executeRaw` 등), `$extends`, `$use`, 배열형 `$transaction`, 알 수 없는 모델 메서드
+- 관계 필드의 중첩 쓰기(`{ tags: { create: [...] } }`, `{ author: { connect: { id } } }` 등). 관계는 각 모델을 따로 쓴다. Json 컬럼 값도 모든 키가 중첩 쓰기 연산 이름(`create`·`connect` 등)이면 거부된다.
+
+`include`·`select` 로 읽는 관계 모델에는 `tenantId` 를 적용하지 않고, 스칼라 외래 키(예: `tagId`)가 같은 테넌트 레코드를 가리키는지도 확인하지 않는다.
 
 ### 직접 사용
 

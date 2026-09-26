@@ -410,10 +410,18 @@ export async function getCurrentTenantId() {
 
 | Method | Injection |
 |---|---|
-| `findMany`, `findFirst`, `findUnique`, `count`, `groupBy` | `where.tenantId = X` |
-| `create` | `data.tenantId = X` |
-| `update`, `updateMany`, `delete`, `deleteMany` | `where.tenantId = X` |
-| `$transaction` | Inner `tx` object is also proxied |
+| `findMany`, `findFirst`, `findFirstOrThrow`, `findUnique`, `findUniqueOrThrow`, `count`, `aggregate`, `groupBy` | `where.tenantId = X` |
+| `create`, `createMany`, `createManyAndReturn` | `data.tenantId = X` (every item for arrays) |
+| `update`, `updateMany`, `updateManyAndReturn`, `delete`, `deleteMany` | `where.tenantId = X` (moving a record to another tenant via data is rejected) |
+| `upsert` | `where.tenantId = X`, `create.tenantId = X` |
+| `$transaction` | Callback form only; the inner `tx` object is also proxied |
+
+Calls whose isolation cannot be guaranteed are rejected with an exception before the original is called:
+
+- Raw queries (`$queryRaw`, `$executeRaw`, ...), `$extends`, `$use`, array-form `$transaction`, unknown model methods
+- Nested relation writes (`{ tags: { create: [...] } }`, `{ author: { connect: { id } } }`, ...). Write each model separately. A Json column value whose keys are all nested-write operation names (`create`, `connect`, ...) is rejected as well.
+
+Related models read via `include`/`select` are not scoped by `tenantId`, and scalar foreign keys (e.g. `tagId`) are not checked to belong to the same tenant.
 
 ### Direct Usage
 
