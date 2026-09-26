@@ -117,6 +117,22 @@ function getDomainVerificationData(
   return data;
 }
 
+/** 인증 대상 도메인. 이전 데이터는 `domain` 필드가 없으므로 `customDomain` 을 사용한다. */
+function getPendingDomain(
+  verificationData: TenantDomainVerificationData,
+  customDomain: string | null,
+): string | null {
+  return verificationData.domain ?? customDomain;
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'P2002'
+  );
+}
+
 function buildVerificationResponse(
   domain: string,
   tenantId: string,
@@ -139,6 +155,15 @@ function buildVerificationResponse(
   };
 }
 
+/**
+ * 커스텀 도메인 서비스.
+ *
+ * `addCustomDomain` 은 도메인을 인증 대기 상태로 `settings.domainVerification` 에만 저장한다.
+ * `tenant.customDomain`(테넌트 해석에 사용하는 컬럼)은 DNS TXT 인증에 성공한 뒤에만 설정하므로,
+ * 소유하지 않은 도메인을 먼저 등록해 선점하거나 인증 전에 활성화할 수 없다.
+ * 같은 도메인을 여러 테넌트가 인증 대기할 수 있으며, 먼저 인증한 테넌트가 도메인을 갖는다.
+ * Vercel 프로젝트 도메인 등록도 인증 성공 뒤에 한다.
+ */
 export function createDomainService(
   prisma: PrismaClientLike,
   domainConfig: DomainServiceConfig,
@@ -168,33 +193,45 @@ export function createDomainService(
         throw new Error(`이미 다른 테넌트에서 사용 중인 도메인입니다: ${domain}`);
       }
 
+      const currentSettings = (tenant.settings as Record<string, unknown>) ?? {};
+
+      // 이미 인증을 마친 같은 도메인이면 인증 데이터를 다시 만들지 않는다.
+      const currentVerification = getDomainVerificationData(currentSettings);
+      if (
+        tenant.customDomain === domain &&
+        currentVerification?.status === 'verified'
+      ) {
+        return buildVerificationResponse(domain, tenantId, currentVerification);
+      }
+
       const token = randomUUID();
       const now = new Date().toISOString();
 
       const verificationData: TenantDomainVerificationData = {
+        domain,
         token,
         status: 'pending',
         sslStatus: 'pending',
         createdAt: now,
       };
 
-      const currentSettings = (tenant.settings as Record<string, unknown>) ?? {};
       const updatedSettings = {
         ...currentSettings,
         domainVerification: verificationData,
       };
 
+      // 인증 전이므로 customDomain 은 비워 둔다. 기존에 인증한 다른 도메인이 있으면 여기서 해제된다.
       await prisma.tenant.update({
         where: { id: tenantId },
         data: {
-          customDomain: domain,
+          customDomain: null,
           settings: updatedSettings,
         },
       });
 
-      if (vercelEnabled) {
-        await addVercelDomain(
-          domain,
+      if (vercelEnabled && tenant.customDomain) {
+        await removeVercelDomain(
+          tenant.customDomain,
           domainConfig.vercelProjectId!,
           domainConfig.vercelTeamId!,
           domainConfig.vercelApiToken!,
@@ -215,14 +252,14 @@ export function createDomainService(
         throw new Error(`테넌트를 찾을 수 없습니다: ${tenantId}`);
       }
 
-      if (tenant.customDomain !== domain) {
-        throw new Error(`테넌트에 등록된 도메인이 아닙니다: ${domain}`);
-      }
-
       const settings = (tenant.settings as Record<string, unknown>) ?? {};
       const verificationData = getDomainVerificationData(settings);
       if (!verificationData) {
         throw new Error('도메인 인증 데이터가 없습니다. addCustomDomain을 먼저 호출하세요.');
+      }
+
+      if (getPendingDomain(verificationData, tenant.customDomain) !== domain) {
+        throw new Error(`테넌트에 등록된 도메인이 아닙니다: ${domain}`);
       }
 
       if (verificationData.status === 'verified') {
@@ -245,10 +282,34 @@ export function createDomainService(
           domainVerification: updatedVerification,
         };
 
-        await prisma.tenant.update({
-          where: { id: tenantId },
-          data: { settings: updatedSettings },
+        const claimed = await prisma.tenant.findFirst({
+          where: { customDomain: domain, NOT: { id: tenantId } },
         });
+        if (claimed) {
+          throw new Error(`이미 다른 테넌트에서 인증한 도메인입니다: ${domain}`);
+        }
+
+        try {
+          await prisma.tenant.update({
+            where: { id: tenantId },
+            data: { customDomain: domain, settings: updatedSettings },
+          });
+        } catch (error) {
+          // 두 테넌트가 동시에 인증하면 customDomain 고유 제약이 나중 요청을 막는다.
+          if (isUniqueConstraintError(error)) {
+            throw new Error(`이미 다른 테넌트에서 인증한 도메인입니다: ${domain}`);
+          }
+          throw error;
+        }
+
+        if (vercelEnabled) {
+          await addVercelDomain(
+            domain,
+            domainConfig.vercelProjectId!,
+            domainConfig.vercelTeamId!,
+            domainConfig.vercelApiToken!,
+          );
+        }
 
         return buildVerificationResponse(domain, tenantId, updatedVerification);
       }

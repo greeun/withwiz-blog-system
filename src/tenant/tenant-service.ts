@@ -169,9 +169,8 @@ export function createTenantService(prisma: PrismaClientLike): TenantService {
         blogConfig: { ...currentSettings.blogConfig, ...settings.blogConfig },
         theme: { ...currentSettings.theme, ...settings.theme },
         seo: { ...currentSettings.seo, ...settings.seo },
-        // 도메인 인증 데이터 보존 (domainVerification은 DomainService가 관리)
-        domainVerification:
-          settings.domainVerification ?? currentSettings.domainVerification,
+        // 도메인 인증 데이터는 DomainService 만 관리한다. 요청 값은 무시하고 기존 값을 보존한다.
+        domainVerification: currentSettings.domainVerification,
       };
 
       await prisma.tenant.update({

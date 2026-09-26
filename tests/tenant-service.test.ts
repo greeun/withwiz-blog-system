@@ -1,5 +1,5 @@
 /**
- * Task 4: tenant-service (createTenantService) 테스트 (16건)
+ * Task 4: tenant-service (createTenantService) 테스트 (17건)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTenantService } from '@withwiz/blog-system/tenant';
@@ -202,5 +202,29 @@ describe('createTenantService', () => {
     });
 
     expect(result.domainVerification).toEqual(domainVerification);
+  });
+
+  it('BS-TS-17: updateSettings — 요청의 domainVerification 은 무시하고 기존 값을 보존한다', async () => {
+    const domainVerification = {
+      domain: 'blog.custom.com',
+      token: 'abc',
+      status: 'pending' as const,
+      sslStatus: 'pending' as const,
+      createdAt: '2025-01-01',
+    };
+    prisma.tenant.findUnique.mockResolvedValue({
+      settings: { blogConfig: {}, domainVerification },
+    });
+    prisma.tenant.update.mockResolvedValue({});
+
+    const result = await service.updateSettings('t-1', {
+      domainVerification: { ...domainVerification, status: 'verified', sslStatus: 'active' },
+    });
+
+    expect(result.domainVerification).toEqual(domainVerification);
+    expect(prisma.tenant.update).toHaveBeenCalledWith({
+      where: { id: 't-1' },
+      data: { settings: expect.objectContaining({ domainVerification }) },
+    });
   });
 });
