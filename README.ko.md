@@ -544,6 +544,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 - 3~63자
 - 소문자, 숫자, 하이픈만 허용
+- 온보딩 라우트·`onboardTenant`·테넌트 생성 라우트가 이 규칙을 검증한다(`TenantSlugSchema`, `OnboardingSchema` 공개)
 - 예약어(`www`, `api`, `admin` 등) 차단은 패키지가 하지 않으므로 호스트가 확인한다
 
 ```ts

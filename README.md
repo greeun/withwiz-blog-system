@@ -544,6 +544,7 @@ The `OnboardingService` creates a new tenant setup step by step (not a transacti
 
 - 3–63 characters
 - Lowercase letters, digits, hyphens only
+- The onboarding route, `onboardTenant` and the tenant create route enforce these rules (`TenantSlugSchema` and `OnboardingSchema` are exported)
 - Reserved words (`www`, `api`, `admin`, ...) are not blocked by the package; the host must check them
 
 ```ts

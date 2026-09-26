@@ -74,16 +74,12 @@ export async function POST(req: Request) {
 
 ## 슬러그 규칙
 
-`tenantSlug`는 서브도메인으로 쓰이므로 엄격한 규칙이 필요하다.
+`tenantSlug`는 서브도메인으로 쓰이므로 엄격한 규칙이 필요하다. 패키지는 이 규칙을 `TenantSlugSchema` 로 공개하며, 온보딩 라우트(`OnboardingSchema`)와 `onboardTenant` 가 테넌트를 만들기 전에 검증한다.
 
 ```ts
-import { z } from 'zod';
+import { TenantSlugSchema } from '@withwiz/blog-system/validators';
 
-const TenantSlugSchema = z
-  .string()
-  .min(3)
-  .max(63)
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, '소문자, 숫자, 하이픈만 허용');
+TenantSlugSchema.parse('my-blog'); // 3~63자, 영소문자·숫자·하이픈, 하이픈으로 시작·끝 불가
 ```
 
 ### 예약어 차단
@@ -125,7 +121,7 @@ export default function TenantOnboardingPage({ selectedUserId }: { selectedUserI
 3. 샘플 게시글 생성 여부
 4. 확인 후 제출
 
-계정 생성·플랜 선택·결제 단계는 없다. 사용자가 직접 가입하고 자기 테넌트를 만드는 셀프 서비스 흐름은 위 "사용 예"처럼 호스트 라우트에서 `authService.register` 와 `onboardTenant` 를 조합한다.
+슬러그는 이름에서 영소문자·숫자·하이픈만 남겨 자동 생성하며(한글 이름이면 직접 입력), 서버와 같은 규칙(3~63자)을 만족해야 다음 단계로 넘어간다. 계정 생성·플랜 선택·결제 단계는 없다. 사용자가 직접 가입하고 자기 테넌트를 만드는 셀프 서비스 흐름은 위 "사용 예"처럼 호스트 라우트에서 `authService.register` 와 `onboardTenant` 를 조합한다.
 
 ## 완료 후 리다이렉트 전략
 
