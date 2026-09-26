@@ -578,6 +578,11 @@ Management routes (`routes.admin`, `routes.tenant`, `routes.billing`, `routes.do
 
 `routes.auth` `logout`, `me` and `changePassword` are available to any signed-in user.
 
+Blog admin routes (`routes.blog.admin`) are authorized differently per mode:
+
+- Multi mode: authenticated with `withAuthApi`, then the requester's membership in the tenant resolved from the request hostname is checked. Reads (list, detail, slug check, dashboard) require `VIEWER` or higher; writes (create, update, delete, publish, bulk) require `EDITOR` or higher. Unknown tenant → 404, non-member or insufficient role → 403. A system role does not replace membership.
+- Single mode: toolkit `withAdminApi` checks the JWT role `'ADMIN'`. Tag and comment admin routes (single mode only) work the same way.
+
 ### Initial Setup
 
 The first super admin is created via database migration/seed:

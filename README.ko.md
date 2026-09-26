@@ -578,6 +578,11 @@ export const POST = system.routes.admin?.deactivateTenant;
 
 `routes.auth` 의 `logout`·`me`·`changePassword` 는 로그인한 모든 사용자가 사용할 수 있다.
 
+블로그 관리 라우트(`routes.blog.admin`)는 모드에 따라 인가 방식이 다르다.
+
+- multi 모드: `withAuthApi` 로 인증한 뒤, 요청 호스트명으로 해석한 테넌트의 멤버십을 확인한다. 조회(목록·상세·슬러그 확인·대시보드)는 `VIEWER` 이상, 쓰기(생성·수정·삭제·발행·일괄 처리)는 `EDITOR` 이상이어야 한다. 테넌트를 찾지 못하면 404, 소속이 아니거나 역할이 부족하면 403 이다. 시스템 역할은 멤버십을 대신하지 않는다.
+- single 모드: toolkit `withAdminApi` 로 JWT 역할 `'ADMIN'` 을 확인한다. 태그·댓글 관리 라우트(single 모드 전용)도 같다.
+
 ### 초기 설정
 
 최초 슈퍼 어드민은 DB 마이그레이션/시드로 생성한다:

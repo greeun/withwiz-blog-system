@@ -1,6 +1,6 @@
 # @withwiz/blog-system 테스트 분류 체계
 
-> 작성일: 2026-09-13. 갱신일: 2026-09-17 (브랜치 `fix/residual-defects`, 0.2.3 에 결함 수정 반영). 이 문서는 `tests/spec.md`(구현 작업 계획서)를 대신하는 현행 분류 문서이다. 모든 수치와 케이스는 기준 커밋에서 테스트를 실행하고 코드를 읽어 확인한 값만 기재했다.
+> 작성일: 2026-09-13. 갱신일: 2026-09-27 (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0 에 multi 모드 블로그 관리 라우트 인가 반영). 이 문서는 `tests/spec.md`(구현 작업 계획서)를 대신하는 현행 분류 문서이다. 모든 수치와 케이스는 기준 커밋에서 테스트를 실행하고 코드를 읽어 확인한 값만 기재했다.
 
 ## 개요
 
@@ -8,14 +8,14 @@
 |------|------|
 | 대상 | `@withwiz/blog-system` 0.2.3: 단일·멀티 테넌트 블로그 SaaS 프레임워크. 2026-09-17 판은 0.2.3 에 결함 수정 6건과 blog-core 2.1.5 의존 갱신을 더한 브랜치 `fix/residual-defects` 기준이며 버전은 올리지 않았다 |
 | 범위 | `src/` 전체(core/, tenant/, auth/, billing/, onboarding/, routes/, admin/, validators/, types/)와 `tests/` 아래 테스트 파일 41개 |
-| 기준 커밋 | `ae0710d` fix(routes): 관리·인증 라우트를 withAuthApi 로 감싸 역할 판정을 blog-system 인가에 맡긴다 (브랜치 `fix/residual-defects`, develop `bca172f` 에서 분기). 이전 판 기준은 `a73dbb1`(2026-09-16)·`35a6d75`(0.2.3), 초판 기준은 `52d72e1` 이다 |
+| 기준 커밋 | `b410e60` fix(routes): multi 모드 블로그 관리 라우트를 테넌트 멤버십 역할로 인가한다 (브랜치 `fix/multi-tenant-blog-admin-auth`, develop `f6a6336` 에서 분기). 이전 판 기준은 `ae0710d`(2026-09-17), `a73dbb1`(2026-09-16)·`35a6d75`(0.2.3), 초판 기준은 `52d72e1` 이다 |
 | 환경 | Vitest 3.2.7, Node.js 22.22.0, pnpm 11.10.0. 테스트 환경은 `node`(vitest.config.ts 에 `environment` 미지정) |
 | 의존 선언 | dependencies `@withwiz/blog-core` `^2.1.5`, devDependencies `@withwiz/toolkit` `^0.15.0`(peerDependencies 는 `>=0.11.0`). `pnpm-workspace.yaml` 의 `minimumReleaseAgeExclude` 에 `@withwiz/blog-core@2.1.5`, `@withwiz/toolkit@0.15.0` 명시 |
 | 주요 설치본 | `@withwiz/toolkit` 0.15.0, `@withwiz/blog-core` 2.1.5(peer 해석으로 `@aws-sdk/client-s3` 3.1131.0 동반), `next` 16.3.4, `react` 19.3.0, `zod` 4.6.2, `stripe` 17.7.0 (`pnpm install --frozen-lockfile` 기준) |
 | 수집 규칙 | `tests/**/*.test.ts` 만 수집(`.tsx` 테스트는 수집 대상이 아님), `setupFiles` 없음 |
 | 렌더링 인프라 | 없음. jsdom·happy-dom·@testing-library 가 devDependencies 와 node_modules 에 존재하지 않음 |
 | 목표 커버리지 | 미설정. vitest.config.ts 에 coverage 설정이 없고 `@vitest/coverage-*` 패키지도 설치되어 있지 않아 커버리지는 실측하지 못했다 |
-| 실측 결과 | 파일 41개, 테스트 391개: 통과 391, 실패 0, 스킵 0 (`pnpm exec vitest run --reporter=json`, 2026-09-17). `pnpm run test` 결과도 같다 |
+| 실측 결과 | 파일 41개, 테스트 415개: 통과 415, 실패 0, 스킵 0 (`npx vitest run`, 2026-09-27) |
 
 ### 문서 갱신 이력
 
@@ -25,6 +25,7 @@
 | 2026-09-15 | `35a6d75` (0.2.3) | 34개 파일, 318건 | `418cf97` 0.2.2 릴리즈(버전만 변경, `52d72e1` 의 오류 처리 변경을 게시), `7b2a048` blog-core 2.1.4·toolkit 0.15.0 의존 갱신(`@aws-sdk/client-s3` 3.1130.0 → 3.1131.0 동반), `46a004a` `BlogSystemConfig.sanitizeContent` 추가와 blog-core 서비스 전달(0.2.3). 새 테스트 `tests/blog-system-sanitize-content.test.ts` 7건을 SC-I-006, TC-I-007·TC-I-008 로 추가 |
 | 2026-09-16 | `a73dbb1` (브랜치 `fix/residual-defects`, 0.2.3) | 40개 파일, 381건 | `abc1010` blog-core 2.1.5 의존 갱신(범위 `^2.1.5`)과 BS-SC-08·09 추가, `bc3636e` tenant·billing·domain 라우트 인가, `cf48c45` OAuth state 검증과 미인증 이메일 연결 차단, `a32f993` 온보딩 샘플 게시글 본문 이스케이프, `2f488a5` 테넌트 프록시 누락 메서드 격리, `a73dbb1` X-Tenant-Id 헤더 불신과 테넌트 해석 단일화. 새 파일 6개(`tests/security/` 5개, `tests/api/` 1개) 61건과 기존 파일의 2건을 추가했다. 결함 확인용 TC-S-004~008 을 ✅ 완료로 전환하고 계획 TC TC-A-015 를 구현했으며, 결함 동작을 전제로 한 기존 테스트 18건의 전제·기대값·이름을 새 동작에 맞게 바꿨다 |
 | 2026-09-17 | `ae0710d` (브랜치 `fix/residual-defects`, 0.2.3) | 41개 파일, 391건 | `ae0710d` 관리·인증 라우트 래퍼를 toolkit `withAdminApi` 에서 `withAuthApi` 로 교체(admin 11, tenant 11, billing 7, domain 5, auth 3). 2026-09-16 판 [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)의 `withAdminApi` 역할 불일치를 해결로 옮겼다. 실제 toolkit 체인으로 검증하는 새 파일 `tests/integration/toolkit-wrapper-chain.test.ts` 10건을 SC-I-007, TC-I-009 로 추가했다. wrappers 목이 `withAdminApi` 만 제공하던 기존 파일 6개(TC-A-009~013, TC-S-007)의 목 이름을 `withAuthApi` 로 바꿨고 단언은 바꾸지 않았다 |
+| 2026-09-27 | `b410e60` (브랜치 `fix/multi-tenant-blog-admin-auth`, 0.3.0) | 41개 파일, 415건 | `b410e60` multi 모드 블로그 관리 라우트 11개를 `withAuthApi` 와 테넌트 멤버십 인가(`requireTenantRole`, 조회 VIEWER·쓰기 EDITOR 이상)로 바꿨다. single 모드는 `withAdminApi` 를 유지한다. [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)의 테넌트 소속 검사 부재를 해결로 옮겼다. TC-A-015 에 BS-MT-07~15(24건)를 추가하고 BS-TH-01 에 멤버십 서비스와 단언 1개를 추가했다. 새 파일은 없다 |
 
 ### 분류 기준
 
@@ -79,7 +80,7 @@
 | SC-A-009 | 과금 라우트 | API | High | ✅ 완료 |
 | SC-A-010 | 도메인 관리 라우트 | API | Medium | ✅ 완료 |
 | SC-A-011 | 자체 catch 라우트의 오류 응답 일관성 | API | Critical | 🔲 계획 |
-| SC-A-012 | 멀티 테넌트 블로그 라우트 테넌트 해석 | API | Critical | ✅ 완료 |
+| SC-A-012 | 멀티 테넌트 블로그 라우트 테넌트 해석과 멤버십 인가 | API | Critical | ✅ 완료 |
 | SC-A-013 | 슈퍼 관리자 라우트 미검증 분기 | API | High | 🔲 계획 |
 | SC-A-014 | 인증 라우트 입력 검증과 OAuth 분기 | API | High | 🔲 계획 |
 | SC-A-015 | 과금 라우트 웹훅 서명·관리자 요금제·BigInt 직렬화 | API | High | 🔲 계획 |
@@ -962,7 +963,7 @@ pnpm exec vitest run \
 
 2026-09-16 `bc3636e` 부터 [B] 부류 가운데 tenant·billing·domain 라우트는 핸들러 앞부분에서 `src/routes/route-authorization.ts` 의 `requireSuperAdmin`·`requireTenantRole` 로 인가를 확인한다. 거부 경로는 TC-S-006 이 검증하고, 이 도메인의 라우트 테스트는 요청자가 권한을 가진 전제로 작성한다. 2026-09-17 `ae0710d` 부터 [B] 부류의 인증 필요 경로는 toolkit `withAdminApi` 대신 `withAuthApi` 로 감싸며, 역할 판정은 toolkit 이 아니라 위 인가 헬퍼와 admin 라우트의 `verifySuperAdmin` 이 맡는다. 이에 맞춰 TC-A-009~013 파일의 wrappers 목 이름을 `withAuthApi` 로 바꿨고, 목이 만드는 컨텍스트와 단언은 바꾸지 않았다.
 
-**실행 명령:** 아래 명령의 실측 결과는 12개 파일, 97개 통과이다.
+**실행 명령:** 아래 명령의 실측 결과는 12개 파일, 121개 통과이다.
 
 ```bash
 pnpm exec vitest run \
@@ -1296,28 +1297,37 @@ pnpm exec vitest run \
 
 ---
 
-### TC-A-015: 멀티 테넌트 블로그 라우트 테넌트 해석
+### TC-A-015: 멀티 테넌트 블로그 라우트 테넌트 해석과 멤버십 인가
 
 | 항목 | 내용 |
 |------|------|
 | **파일** | `tests/api/blog-routes-multi-tenant.test.ts` |
-| **대상** | `src/routes/blog-routes.ts`: `createBlogRoutes(null, options, multiTenantConfig)` 의 비공개 `resolveService` → `src/tenant/tenant-middleware.ts`: `resolveTenantFromRequest` |
+| **대상** | `src/routes/blog-routes.ts`: `createBlogRoutes(null, options, multiTenantConfig)` 의 비공개 `resolveTenantId`·`resolveService`·`adminRoute` → `src/tenant/tenant-middleware.ts`: `resolveTenantFromRequest`, `src/routes/route-authorization.ts`: `requireTenantRole` |
 | **우선순위** | Critical |
-| **전제조건** | `multiTenantConfig = { createScopedService: vi.fn(), tenantResolver: 4개 메서드 vi.fn, baseDomain: 'blog.example.com' }`, `withPublicApi` 는 사용자 없는 컨텍스트, `withAdminApi` 는 사용자 `{ id: 'u-1', role: 'ADMIN' }` 컨텍스트, api-helpers·blog-core validators 통과형 모킹 |
-| **테스트 데이터** | 테넌트 `{ id: 't-1', slug: 'my-blog' }`, 요청 호스트 `my-blog.blog.example.com`, BlogError 형태 예외 `Object.assign(new Error('이미 사용 중인 슬러그입니다.'), { code: 'DUPLICATE_SLUG', statusCode: 409 })` |
+| **전제조건** | `multiTenantConfig = { createScopedService: vi.fn(), tenantResolver: 4개 메서드 vi.fn, baseDomain: 'blog.example.com', tenantUserService: { getUserRole: vi.fn() } }`(기본 역할 EDITOR, 13번은 `tenantUserService` 없음). wrappers 는 통과형이며 `withPublicApi` 는 사용자 없는 컨텍스트, `withAuthApi`·`withAdminApi` 는 `auth.user`(기본 `{ id: 'u-1', role: 'USER' }`) 컨텍스트. api-helpers·blog-core validators 통과형 모킹 |
+| **테스트 데이터** | 테넌트 `{ id: 't-1', slug: 'my-blog' }`, 요청 호스트 `my-blog.blog.example.com`, BlogError 형태 예외 `Object.assign(new Error('이미 사용 중인 슬러그입니다.'), { code: 'DUPLICATE_SLUG', statusCode: 409 })`. 조회 라우트 4개(`list.GET`·`detail.GET`·`slugCheck.GET`·`dashboard.GET`), 쓰기 라우트 7개(`list.POST`·`list.DELETE`·`detail.PUT`·`detail.DELETE`·`publish.PATCH`·`bulk.PATCH`·`bulk.DELETE`) |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
 | 1 | BS-MT-01: `resolve` 가 `null`, `public.list.GET` | 404 `'테넌트를 찾을 수 없습니다.'`, `createScopedService` 미호출 |
 | 2 | BS-MT-02: `resolve` 가 테넌트 반환, `public.list.GET` | `resolve('my-blog.blog.example.com', 'blog.example.com')`, `createScopedService('t-1')` 1회, 스코프 서비스 `listPublished` 1회 |
-| 3 | BS-MT-03: `admin.list.POST` 유효 body | 201, 스코프 서비스 `create(body, 'u-1')` |
-| 4 | BS-MT-04: 테넌트 해석 성공, `admin.slugCheck.GET` 에 slug 없음 | 400, `createScopedService('t-1')` 호출 뒤 `checkSlugAvailable` 미호출 (테넌트 해석 뒤 검사) |
+| 3 | BS-MT-03: EDITOR 가 `admin.list.POST` 유효 body | 201, 스코프 서비스 `create(body, 'u-1')` |
+| 4 | BS-MT-04: 테넌트 해석 성공, `admin.slugCheck.GET` 에 slug 없음 | 400, `createScopedService('t-1')` 호출 뒤 `checkSlugAvailable` 미호출 (테넌트 해석·인가 뒤 검사) |
 | 5 | BS-MT-05: 테넌트 해석 실패, `admin.detail.DELETE` | 404, `remove` 미호출 |
 | 6 | BS-MT-06: 스코프 서비스 `create` 가 `statusCode 409` 예외 | 409, `success false`, `error.code 'DUPLICATE_SLUG'` |
+| 7 | BS-MT-07: `admin.list.GET` | 200, `getUserRole('t-1', 'u-1')` |
+| 8 | BS-MT-08: 멤버십 없음(`getUserRole` → `null`), JWT 역할 `'ADMIN'`, `admin.list.GET` | 403, `createScopedService` 미호출 |
+| 9 | BS-MT-09: 멤버십 없음, JWT 역할 `'SUPER_ADMIN'`, `admin.list.POST` | 403, `create` 미호출 |
+| 10 | BS-MT-10: VIEWER 가 조회 라우트 4개 각각 호출 (4건) | 200, `createScopedService('t-1')` |
+| 11 | BS-MT-11: VIEWER 가 쓰기 라우트 7개 각각 호출 (7건) | 403, `createScopedService` 미호출 |
+| 12 | BS-MT-12: EDITOR 가 쓰기 라우트 7개 각각 호출 (7건) | 2xx, `createScopedService('t-1')` |
+| 13 | BS-MT-13: `tenantUserService` 없이 만든 라우트의 `admin.list.GET` | 403, `createScopedService` 미호출 (fail-closed) |
+| 14 | BS-MT-14: 인증 정보 없음, `admin.list.GET` | 401, `getUserRole` 미호출 |
+| 15 | BS-MT-15: multi 모드와 single 모드로 각각 라우트 생성 | multi 는 `withAuthApi` 11회·`withAdminApi` 0회, single 은 `withAdminApi` 11회·`withAuthApi` 0회 |
 
-- **자동화:** 가능 ✅ | **테스트 수:** 6개 (2026-09-16 실측)
-- **비고:** 2026-09-16 에 계획 TC 를 계획 당시 파일 경로와 단계대로 구현했다. `X-Tenant-Id` 헤더를 사용하지 않는 계약이므로 6건 모두 `a73dbb1` 수정 전 코드에서도 통과했다. 테넌트 해석이 헤더를 무시하는지는 TC-S-005 가 실제 `createTenantResolver` 로 검증한다. multi 모드에서 `createBlogSystem` 이 만드는 블로그 라우트는 이 경로만 사용한다. 이 경로의 관리자 라우트는 `withAdminApi` 인증 외에 테넌트 소속을 확인하지 않는다([확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)).
-
+- **자동화:** 가능 ✅ | **테스트 수:** 30개 (2026-09-27 실측)
+- **비고:** 2026-09-16 에 계획 TC 를 계획 당시 파일 경로와 단계대로 구현했다(BS-MT-01~06). `X-Tenant-Id` 헤더를 사용하지 않는 계약이므로 6건 모두 `a73dbb1` 수정 전 코드에서도 통과했다. 테넌트 해석이 헤더를 무시하는지는 TC-S-005 가 실제 `createTenantResolver` 로 검증한다. multi 모드에서 `createBlogSystem` 이 만드는 블로그 라우트는 이 경로만 사용하며, 팩토리는 `tenantUserService` 를 함께 전달한다. 인가 순서는 인증(401, 실제 체인에서는 toolkit `authMiddleware`) → 테넌트 해석(404) → 멤버십 역할(403) → 입력 검증(400)이다. 시스템 역할(JWT `'ADMIN'`·`'SUPER_ADMIN'`)은 테넌트 멤버십을 대신하지 않는다. single 모드 관리 라우트는 여전히 toolkit `withAdminApi` 로 JWT 역할 `'ADMIN'` 을 확인하며, 호스트 dts-ballet-homepage 가 이 경로를 사용한다. 실제 toolkit 체인을 거친 multi 모드 블로그 관리 라우트는 검증하지 않는다(TC-I-009 는 admin·tenant·billing·domain·auth 라우트 대상).
+- **결함 이력:** 2026-09-16·09-17 판에서는 [확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)에만 기록했다. `b410e60` 이전에는 multi 모드 블로그 관리 라우트 11개가 `withAdminRoute`(toolkit `withAdminApi`)로 감싸져 있어 JWT 역할이 `'ADMIN'` 인 요청만 통과했고, 테넌트 소속은 확인하지 않았다. 그래서 시스템 역할이 `USER` 인 테넌트 구성원은 자기 테넌트의 글을 관리할 수 없었고, 역할이 `'ADMIN'` 인 사용자는 다른 테넌트의 호스트로 요청해 그 테넌트의 글을 변경할 수 있었다. 수정 전 코드에서는 wrappers 목에 `withAuthApi` 가 없거나 멤버십 검사가 없어 BS-MT-07~15 가 실패한다.
 ---
 
 ### TC-A-016: 슈퍼 관리자 라우트 미검증 분기 🔲 계획
@@ -1608,12 +1618,12 @@ pnpm exec vitest run \
 | **파일** | `tests/security/tenant-header-trust.test.ts` |
 | **대상** | `src/tenant/tenant-middleware.ts`: `resolveTenantFromRequest`, `createTenantResolutionMiddleware` / `src/routes/blog-routes.ts`: 비공개 `resolveService` / `src/auth/role-middleware.ts`: `createTenantRoleMiddleware` / `src/core/blog-system.ts`: multi 모드 `middleware.requireTenantRole` |
 | **우선순위** | Critical |
-| **전제조건** | 실제 `createTenantResolver(mockPrisma)` 사용, `tenant.findFirst` 가 where 의 slug·customDomain 에 맞는 테넌트 반환, wrappers 통과형(`withAdminApi` 사용자 `{ id: 'u-1', role: 'ADMIN' }`). 8번은 실제 `createBlogSystem({ mode: 'multi', domain: { baseDomain } })` 과 `tenantUser.findUnique` 가 `{ role: 'OWNER' }` 반환 |
+| **전제조건** | 실제 `createTenantResolver(mockPrisma)` 사용, `tenant.findFirst` 가 where 의 slug·customDomain 에 맞는 테넌트 반환, wrappers 통과형(`withAdminApi`·`withAuthApi` 사용자 `{ id: 'u-1', role: 'ADMIN' }`). 1번은 실제 `createTenantUserService(mockPrisma)` 를 전달하며 `tenantUser.findUnique` 가 `{ role: 'OWNER' }` 반환. 8번은 실제 `createBlogSystem({ mode: 'multi', domain: { baseDomain } })` 과 `tenantUser.findUnique` 가 `{ role: 'OWNER' }` 반환 |
 | **테스트 데이터** | baseDomain `blog.example.com`, 호스트 `tenant-a.blog.example.com`·`unknown.example.com`, 헤더 `X-Tenant-Id: tenant-b`(또는 `id-b`)·`X-Tenant-Slug: tenant-b`, 테넌트 `{ id: 'id-a', slug: 'tenant-a' }`, `{ id: 'id-b', slug: 'tenant-b' }` |
 
 | # | 단계 | 예상 결과 |
 |---|------|---------|
-| 1 | BS-TH-01: tenant-a 호스트와 `X-Tenant-Id: tenant-b` 로 `admin.list.GET` | 200, `createScopedService('id-a')` 1회, `findFirst` 에 slug `'tenant-b'` 조회 없음 |
+| 1 | BS-TH-01: tenant-a 호스트와 `X-Tenant-Id: tenant-b` 로 `admin.list.GET` | 200, `createScopedService('id-a')` 1회, 멤버십 조회 `tenantUser.findUnique` where 의 `tenantId 'id-a'`, `findFirst` 에 slug `'tenant-b'` 조회 없음 |
 | 2 | BS-TH-02: 같은 호스트에 두 헤더를 지정해 `public.list.GET` | `createScopedService('id-a')`, 스코프 서비스 `listPublished` 1회 |
 | 3 | BS-TH-03: `unknown.example.com` 호스트와 헤더 | 404, `createScopedService` 미호출 |
 | 4 | BS-TH-04: `resolveTenantFromRequest` 에 헤더 지정(모킹 `resolveFromSlug` 는 tenant-b 반환) | `{ tenantId: 'id-a', tenant }`, `resolveFromSlug` 미호출, `resolve('tenant-a.blog.example.com', 'blog.example.com')` |
@@ -1623,7 +1633,7 @@ pnpm exec vitest run \
 | 8 | BS-TH-08: multi 모드 `requireTenantRole(ADMIN)` 에 tenant-a 호스트와 헤더 `id-b` / unknown 호스트 | 전자는 200, `tenantUser.findUnique` where `{ tenantId_userId: { tenantId: 'id-a', userId: 'u-1' } }`, 후자는 404 이고 역할 조회 추가 없음 |
 
 - **자동화:** 가능 ✅ | **테스트 수:** 8개 (2026-09-16 실측)
-- **비고:** 테넌트 해석은 `resolveTenantFromRequest` 한 곳에서 호스트명(커스텀 도메인 → 서브도메인)으로만 한다. 역할 미들웨어는 앞선 서버 측 미들웨어가 기록한 `metadata.tenantId` 만 신뢰한다. 따라서 `createTenantRoleMiddleware` 를 직접 쓰는 호스트는 2026-09-16 에 추가한 `createTenantResolutionMiddleware` 나 자체 미들웨어를 앞에 두어야 한다. multi 모드 `middleware.requireTenantRole` 은 두 미들웨어를 조합하며, 인증 정보가 없으면 테넌트를 해석하지 않고 역할 미들웨어가 401 로 응답한다. `TENANT_ID_HEADER`·`TENANT_SLUG_HEADER` 상수는 import 호환을 위해 export 를 유지하고 `@deprecated` 로 표시했다. 헤더로 테넌트를 고르는 경로는 막았지만, multi 모드 블로그 관리자 라우트가 테넌트 소속을 확인하지 않는 문제는 남아 있다([확인이 필요한 사항](#확인이-필요한-사항-테스트-범위-밖에서-발견)).
+- **비고:** 테넌트 해석은 `resolveTenantFromRequest` 한 곳에서 호스트명(커스텀 도메인 → 서브도메인)으로만 한다. 역할 미들웨어는 앞선 서버 측 미들웨어가 기록한 `metadata.tenantId` 만 신뢰한다. 따라서 `createTenantRoleMiddleware` 를 직접 쓰는 호스트는 2026-09-16 에 추가한 `createTenantResolutionMiddleware` 나 자체 미들웨어를 앞에 두어야 한다. multi 모드 `middleware.requireTenantRole` 은 두 미들웨어를 조합하며, 인증 정보가 없으면 테넌트를 해석하지 않고 역할 미들웨어가 401 로 응답한다. `TENANT_ID_HEADER`·`TENANT_SLUG_HEADER` 상수는 import 호환을 위해 export 를 유지하고 `@deprecated` 로 표시했다. multi 모드 블로그 관리 라우트의 테넌트 멤버십 인가는 2026-09-27 `b410e60` 에서 추가했고 TC-A-015 가 검증한다.
 - **결함 이력:** 2026-09-13·09-15 판에서는 결함 확인용 🔲 계획 TC 였다. 0.2.3 의 `resolveTenantFromRequest` 는 `X-Tenant-Id` 헤더가 있으면 그 값을 `resolveFromSlug` 로 조회해 호스트명보다 우선했고, 해당 슬러그가 없을 때만 호스트명으로 폴백했다. `createTenantRoleMiddleware` 는 같은 헤더를 `metadata.tenantId` 보다 먼저 읽어 테넌트 ID 로 해석했다. 그 결과 tenant-a 호스트로 온 요청이 헤더만으로 tenant-b 스코프의 블로그 라우트를 사용했고, 두 모듈이 같은 헤더 값을 서로 다른 식별자(슬러그·ID)로 읽었다. 코드 주석은 이 헤더를 "신뢰할 수 있는 내부 요청용"으로 설명했지만 요청 출처 검사는 없었다. multi 모드 `requireTenantRole` 은 헤더와 metadata 가 모두 없으면 400 이었다. 2026-09-16 `a73dbb1` 에서 헤더를 읽지 않도록 고치고 해석을 한 곳으로 모았다. 수정 전 실행에서 8건이 모두 실패했다. 헤더 동작을 고정하던 BS-TM-01(TC-U-006)과 BS-RM-02~04(TC-S-003)는 새 동작으로 바꿨다.
 - **관련 요구사항:** OWASP A01:2021 Broken Access Control
 
@@ -1895,7 +1905,7 @@ pnpm exec vitest run \
 |------|------------|-------------|-----------------|-----------------|----------------|
 | **Unit** | 16개 | 163개 | 16 (12/4) | 24 (16/8) | +8개 |
 | **Integration** | 5개 | 34개 | 7 (4/3) | 9 (6/3) | +3개 |
-| **API** | 12개 | 97개 | 16 (11/5) | 19 (14/5) | +5개 |
+| **API** | 12개 | 121개 | 16 (11/5) | 19 (14/5) | +5개 |
 | **E2E** | 0개 | 0개 | 2 (0/2) | 2 (0/2) | +2개 |
 | **Security** | 8개 | 97개 | 8 (8/0) | 8 (8/0) | 없음 |
 | **Performance** | 0개 | 0개 | 1 (0/1) | 1 (0/1) | +1개 |
@@ -1903,13 +1913,14 @@ pnpm exec vitest run \
 | **Smoke** | 0개 | 0개 | 2 (0/2) | 2 (0/2) | +2개 |
 | **Load/Stress** | 0개 | 0개 | 0 | 0 | 없음 |
 | **Chaos** | 0개 | 0개 | 0 | 0 | 없음 |
-| **합계** | **41개** | **391개** | **55 (35/20)** | **68 (44/24)** | **+24개** |
+| **합계** | **41개** | **415개** | **55 (35/20)** | **68 (44/24)** | **+24개** |
 
 - 계획 TC 의 테스트 수는 추측하지 않고 0개로 기재했다. 구현 후 실측값으로 갱신한다.
-- 파일 누락 대조: `find tests -name "*.test.ts"` 결과 41개와 이 문서의 도메인별 실행 명령에 포함된 파일 41개를 비교한 결과, 누락 0개와 중복 배정 0개를 확인했다. 도메인별 실행 결과의 합(163 + 34 + 97 + 97)도 전체 실행 결과 391과 일치한다(2026-09-17 실측).
+- 파일 누락 대조: `find tests -name "*.test.ts"` 결과 41개와 이 문서의 도메인별 실행 명령에 포함된 파일 41개를 비교한 결과, 누락 0개와 중복 배정 0개를 확인했다. 도메인별 실행 결과의 합(163 + 34 + 121 + 97)도 전체 실행 결과 415와 일치한다(2026-09-27 실측).
 - 2026-09-15 갱신에서 🔲 계획 TC 가운데 새 테스트로 완료된 항목은 없다. `tests/blog-system-sanitize-content.test.ts` 는 기존 계획 TC 의 단계와 겹치지 않아 SC-I-006, TC-I-007·TC-I-008 을 새로 추가했다. 완료 TC 35개는 모두 실제 테스트 파일과 기존 ID 가 존재하고 테스트 수가 실측과 일치함을 다시 대조했다.
 - 2026-09-16 갱신에서 결함 확인용 TC-S-004~008 을 ✅ 완료로 전환하고 계획 TC 인 TC-A-015 를 구현했다. 새 파일 6개(61건)와 기존 파일에 추가한 BS-SC-08·09(2건)는 모두 기존 SC·TC 에 배정했으며 새 SC·TC 는 없다. 완료 TC 43개의 테스트 수를 실측과 다시 대조했다.
 - 2026-09-17 갱신에서 `withAdminApi` 역할 불일치 수정의 회귀 테스트 파일 1개(10건)를 새 SC-I-007, TC-I-009 로 추가했다. 기존 계획 TC 가운데 이 파일로 완료된 항목은 없다. 래퍼 교체로 목 이름만 바꾼 기존 파일 6개는 테스트 수가 바뀌지 않았다. 완료 TC 44개의 테스트 수를 실측과 다시 대조했다.
+- 2026-09-27 갱신에서 multi 모드 블로그 관리 라우트 인가의 회귀 테스트 24건(BS-MT-07~15)을 기존 TC-A-015 에 추가했다. 새 파일·SC·TC 는 없다. BS-TH-01 은 테스트 수가 바뀌지 않았다.
 
 ---
 
@@ -1954,7 +1965,7 @@ pnpm exec vitest run \
 | BS-AR-01~06 | `tests/admin-routes.test.ts` | 6 | TC-A-011 | SC-A-008 | Task 17 |
 | BS-BI-01~05 | `tests/integration/billing-routes.test.ts` | 5 | TC-A-012 | SC-A-009 | 미수록 |
 | BS-DR-01~05 | `tests/integration/domain-routes.test.ts` | 5 | TC-A-013 | SC-A-010 | 미수록 |
-| BS-MT-01~06 | `tests/api/blog-routes-multi-tenant.test.ts` | 6 | TC-A-015 | SC-A-012 | 미수록 |
+| BS-MT-01~15 | `tests/api/blog-routes-multi-tenant.test.ts` | 30 | TC-A-015 | SC-A-012 | 미수록 |
 | BS-TP-01~19 | `tests/tenant-proxy.test.ts` | 19 | TC-S-001 | SC-S-001 | Task 2 (01~14 만 수록) |
 | RBAC-01~18 | `tests/unit/rbac-edge-cases.test.ts` | 18 | TC-S-002 | SC-S-002 | 미수록 |
 | BS-RM-01, 02, 03, 03b, 04 | `tests/role-middleware.test.ts` | 5 | TC-S-003 | SC-S-003 | Task 9 (03b 미수록) |
@@ -1984,7 +1995,7 @@ pnpm exec vitest run \
 | 도메인 | 사전 조사 판정 | 근거 (코드 확인) | 현재 파일/테스트 | 이 문서의 SC |
 |--------|--------------|----------------|---------------|------------|
 | Unit | 적용 | 서비스·검증기·헬퍼가 `create*` 팩토리로 분리되어 Prisma delegate 모킹만으로 검증할 수 있다 | 16 / 163 | SC-U-001~016 |
-| API | 적용 | 라우트 9종이 `create*Routes` 팩토리로 핸들러를 반환하므로(scheduler 라우트는 blog-core 재export) Request 기반 계약 검증이 가능하다 | 12 / 97 | SC-A-001~016 |
+| API | 적용 | 라우트 9종이 `create*Routes` 팩토리로 핸들러를 반환하므로(scheduler 라우트는 blog-core 재export) Request 기반 계약 검증이 가능하다 | 12 / 121 | SC-A-001~016 |
 | Integration | 적용 | `createBlogSystem` 이 mode·billing·domain·features 설정에 따라 서비스·라우트·미들웨어를 조립하는 분기가 있고, `storage`·`sanitizeContent` 같은 호스트 설정을 blog-core 서비스에 전달한다. 라우트는 toolkit 미들웨어 체인과 blog-system 인가 헬퍼를 함께 거치므로 두 계층의 역할 체계가 맞는지는 조립 상태에서만 확인할 수 있다 | 5 / 34 | SC-I-001~007 |
 | E2E | 제한적 | 호스트 앱이 없어 브라우저 여정은 범위 밖이며, 동봉된 클라이언트 모듈(OnboardingWizard, createAuthFetch)과 서버 라우트 사이의 계약으로 한정한다 | 0 / 0 | SC-E-001~002 |
 | Security | 적용(우선) | `createTenantProxy` 의 tenantId 주입과 격리 불가 호출 거부, `ROLE_LEVELS` 기반 인가, 관리 라우트의 슈퍼 관리자·테넌트 소속 인가, 호스트명 기반 테넌트 해석이 멀티 테넌트 격리의 핵심 경로이다 | 8 / 97 | SC-S-001~008 |
@@ -2108,13 +2119,13 @@ pnpm exec vitest run \
 - **참조 스키마의 Subscription.tenantId `@unique`**: `createSubscription` 은 기존 구독 확인 없이 새 레코드를 만들고 `getSubscription` 은 `createdAt` 내림차순으로 최신 1건을 조회한다. 스키마대로라면 같은 테넌트의 두 번째 구독 생성은 고유 제약 위반이 된다. 2026-09-16 재확인에서도 `createSubscription` 은 `subscription.create` 를 그대로 호출한다.
 - **로그인 오류 문구 차이**: 존재하지 않는 이메일과 잘못된 비밀번호는 같은 문구를 반환하지만, 비밀번호가 없는 OAuth 전용 계정은 `'비밀번호가 설정되지 않은 계정입니다. OAuth 로그인을 사용하세요.'` 를 반환하고 auth 라우트가 이 문구를 그대로 응답한다. AS-09 는 이 동작을 고정하고 있다. 계정 유형 노출을 허용할지 결정이 필요하다. 2026-09-16 재확인에서도 문구가 같다.
 - **새니타이저가 빈 값을 반환할 때 원문 저장 (해결)**: blog-core 2.1.4 의 `createBlogService` 는 `create`·`update` 에서 `sanitize(data.content) || data.content` 로 저장값을 정해, 새니타이저가 `''` 또는 `null` 을 반환하면(예: `<script>alert(1)</script>` 만 있는 본문) 원문이 저장되었다. blog-core 2.1.5(`b47b2f7`)가 `sanitize(data.content) ?? ''` 로 고쳤다. 2026-09-16 `abc1010` 에서 이 저장소의 개발 lockfile 을 2.1.5 로 올리고 `dependencies` 범위를 `^2.1.5` 로 올렸으며, BS-SC-08·09 로 빈 값 저장을 검증했다(TC-I-007). 두 테스트는 2.1.4 에서 실패했다.
+- **multi 모드 블로그 관리자 라우트의 테넌트 소속 검사 부재 (해결)**: 2026-09-16·09-17 에 코드를 읽어 확인한 항목이다. `createBlogRoutes` 의 multiTenantConfig 경로는 호스트명으로 테넌트를 해석한 뒤 `withAdminApi` 인증만 확인해, 관리자 토큰이 있으면 다른 테넌트의 호스트로 요청해 그 테넌트의 게시글을 변경할 수 있었고, 시스템 역할이 `USER` 인 테넌트 구성원은 도달하지 못했다. 2026-09-27 `b410e60` 에서 multi 모드 관리 라우트 11개를 `withAuthApi` 와 `requireTenantRole`(조회 VIEWER·쓰기 EDITOR 이상)로 바꿨고 TC-A-015 BS-MT-07~15 로 검증했다.
 - **toolkit `withAdminApi` 역할과 blog-system 역할의 불일치 (해결)**: 2026-09-16 에 코드를 읽어 확인한 항목이다. toolkit 0.15.0 의 `withAdminApi` 체인은 `adminMiddleware = createRoleMiddleware('ADMIN')` 을 사용해 JWT 역할이 `'ADMIN'` 인 요청만 통과시킨다. blog-system 의 시스템 역할은 `USER`·`SUPER_ADMIN` 이고 `createAuthService` 는 사용자 `role` 로 토큰을 만든다. 그래서 실제 체인에서는 SUPER_ADMIN 토큰이 슈퍼 관리자 라우트 핸들러에 도달하기 전에 403 이 되었고, 시스템 역할이 USER 인 테넌트 구성원은 테넌트 관리 라우트에, 로그인 사용자는 auth `logout`·`me`·`changePassword` 에 도달하지 못했다. 2026-09-17 `ae0710d` 에서 admin·tenant·billing·domain·auth 라우트의 37개 핸들러를 `withAuthApi` 로 감싸 역할 판정을 blog-system 인가 헬퍼에 맡겼고, 실제 toolkit 체인으로 TC-I-009 에서 검증했다. 공개 타입의 `ReturnType<typeof withAdminApi>` 는 `withAuthApi` 로 바꿨으며 두 래퍼의 반환 시그니처는 같다. 이 라우트들의 rate limit 종류는 `admin` 에서 `api` 로 바뀌었다.
 
 
 다음 항목은 2026-09-16·09-17 결함 수정 중에 코드를 읽어 확인했으며 이번에는 고치지 않았다.
 
-- **multi 모드 블로그 관리자 라우트의 테넌트 소속 검사 부재**: `createBlogRoutes` 의 multiTenantConfig 경로는 호스트명으로 테넌트를 해석한 뒤 `withAdminApi` 인증만 확인한다. 헤더로 테넌트를 고르는 경로는 막았지만(TC-S-005), 관리자 토큰이 있으면 다른 테넌트의 호스트로 요청해 그 테넌트의 게시글을 변경할 수 있다. 콘텐츠 작업별 필요 역할(EDITOR·ADMIN)을 정해야 하므로 고치지 않았다.
-- **블로그·태그·댓글 관리자 라우트에 남은 `withAdminApi` 고정 역할**: 2026-09-17 래퍼 교체는 admin·tenant·billing·domain·auth 라우트만 대상으로 했다. `createBlogRoutes`(두 모드)·`createTagRoutes`·`createCommentRoutes`(single 모드 전용)의 관리자 경로와 `withAdminRoute` 는 여전히 `withAdminApi` 이므로 JWT 역할이 `'ADMIN'` 이어야 한다. multi 모드의 슈퍼 관리자 `users.updateRole` 은 `USER`·`SUPER_ADMIN` 만 부여하므로, DB 역할을 직접 `'ADMIN'` 으로 두지 않는 한 blog-system 토큰으로 블로그 관리자 라우트에 도달할 수 없다. single 모드 호스트(dts-ballet-homepage)는 `Role` enum 에 `ADMIN` 이 있고 blog·tag·comment 관리자 라우트를 `'ADMIN'` 역할 토큰으로 사용하므로 그대로 두었다. multi 모드에서 `withAuthApi` 로 바꾸려면 위 항목의 테넌트 소속 검사를 먼저 추가해야 한다. 그렇지 않으면 로그인한 모든 사용자에게 열린다.
+- **single 모드 블로그·태그·댓글 관리자 라우트에 남은 `withAdminApi` 고정 역할**: 2026-09-27 `b410e60` 에서 multi 모드 블로그 관리 라우트는 테넌트 멤버십 인가로 바꿨다(TC-A-015). `createBlogRoutes` single 모드와 `createTagRoutes`·`createCommentRoutes`(single 모드 전용)의 관리자 경로는 여전히 `withAdminApi` 이므로 JWT 역할이 `'ADMIN'` 이어야 한다. single 모드 호스트(dts-ballet-homepage)는 `Role` enum 에 `ADMIN` 이 있고 이 라우트들을 `'ADMIN'` 역할 토큰으로 사용하므로 그대로 두었다.
 - **인가보다 앞선 입력 검증·비활성 응답**: billing `checkout`·`portal`, domain `add`·`verify`·`status`·`remove` 는 필수 입력을 검사해 400 을 반환한 뒤에 `requireTenantRole` 을 호출하고, tenant `users.*` 는 `tenantUserService` 가 없으면 501 을 먼저 반환한다. 2026-09-17 래퍼 교체 뒤에는 소속이 없는 로그인 사용자도 이 응답을 받는다. 데이터는 노출되지 않지만 인가를 입력 검증보다 앞에 둘지 결정이 필요하다.
 - **커스텀 도메인 인증 전 활성화**: `domainService.addCustomDomain` 은 DNS TXT 인증 전에 `tenant.customDomain` 을 설정하고, `createTenantResolver.resolveFromCustomDomain` 은 인증 상태를 확인하지 않는다. `tenant settings.PUT` 은 본문의 `domainVerification` 을 그대로 저장한다(`updateSettings` 가 지정값을 우선). 2026-09-16 에 테넌트 구성원의 `detail.PUT` 으로 `customDomain` 을 바꾸는 경로는 막았지만 인증 흐름은 바꾸지 않았다.
 - **슈퍼 관리자 `tenants.update.PUT` 입력 검증 없음**: `createSuperAdminRoutes` 는 본문을 스키마 검증 없이 `tenantService.update` 에 넘기므로, 다른 테넌트와의 중복 확인 없이 `customDomain` 을 설정할 수 있다.
