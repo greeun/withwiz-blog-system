@@ -5,6 +5,11 @@ import type { PrismaClientLike } from '../types/system';
  *
  * 스코프 클라이언트로 접근하는 모든 모델은 `tenantId` 컬럼을 가진 테넌트 소유 모델로 취급한다.
  * 격리를 적용할 수 있는 호출만 허용하고, 적용할 수 없는 호출은 원본을 호출하지 않고 예외로 거부한다.
+ *
+ * 격리 범위는 호출한 모델의 최상위 `where`·`data` 이다. 다음은 적용하지 않는다.
+ * - 관계 필드의 중첩 쓰기(`create`·`connect` 등): 거부한다.
+ * - `include`·`select` 로 읽는 관계 모델: 적용하지 않는다(부모 레코드의 외래 키로만 연결된다).
+ * - 스칼라 외래 키 값(예: `tagId`): 다른 테넌트 레코드를 가리키는지 확인하지 않는다.
  */
 
 /** where 에 tenantId 를 강제하는 조회 메서드 */
@@ -39,6 +44,23 @@ const REJECTED_CLIENT_METHODS = [
   '$use',
 ] as const;
 
+/**
+ * 관계 필드의 중첩 쓰기 연산. 중첩 레코드에는 tenantId 를 적용할 수 없으므로 거부한다.
+ * `set` 은 스칼라 필드 갱신 연산이기도 하므로 값이 객체·배열일 때만 관계 연산으로 본다.
+ */
+const NESTED_WRITE_OPERATIONS = [
+  'create',
+  'createMany',
+  'connect',
+  'connectOrCreate',
+  'disconnect',
+  'delete',
+  'deleteMany',
+  'update',
+  'updateMany',
+  'upsert',
+] as const;
+
 function includes(list: readonly string[], value: string): boolean {
   return list.includes(value);
 }
@@ -65,6 +87,42 @@ function withTenantData(data: any, tenantId: string): any {
   return Array.isArray(data)
     ? data.map((item) => ({ ...item, tenantId }))
     : { ...data, tenantId };
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function isNestedWriteOperation(key: string, value: unknown): boolean {
+  if (key === 'set') return value !== null && typeof value === 'object';
+  return includes(NESTED_WRITE_OPERATIONS, key);
+}
+
+/**
+ * 필드 값이 중첩 쓰기 연산 객체인지 판정한다.
+ * Json 컬럼 값의 오탐을 줄이기 위해 모든 키가 중첩 쓰기 연산일 때만 해당한다.
+ */
+function isNestedWrite(value: unknown): boolean {
+  if (!isPlainObject(value)) return false;
+  const entries = Object.entries(value);
+  return entries.length > 0 && entries.every(([key, v]) => isNestedWriteOperation(key, v));
+}
+
+/** data(단일 객체 또는 배열)의 필드에 관계 중첩 쓰기가 있으면 거부한다. */
+function assertNoNestedWrite(data: unknown, target: string): void {
+  const items = Array.isArray(data) ? data : [data];
+  for (const item of items) {
+    if (!isPlainObject(item)) continue;
+    for (const [field, value] of Object.entries(item)) {
+      if (isNestedWrite(value)) {
+        throw new Error(
+          `테넌트 스코프 Prisma 에서 관계 필드의 중첩 쓰기는 격리를 보장할 수 없습니다: ${target}.${field}`,
+        );
+      }
+    }
+  }
 }
 
 /** 변경 data 가 레코드를 다른 테넌트로 옮기려 하면 거부한다. */
@@ -103,21 +161,26 @@ function createDelegateProxy(
       if (includes(WHERE_UPDATE_METHODS, methodName)) {
         return (args: any) => {
           assertNoTenantChange(args?.data, tenantId, target);
+          assertNoNestedWrite(args?.data, target);
           return original.call(del, withTenantWhere(args, tenantId));
         };
       }
 
       if (includes(CREATE_METHODS, methodName)) {
-        return (args: any) =>
-          original.call(del, {
+        return (args: any) => {
+          assertNoNestedWrite(args?.data, target);
+          return original.call(del, {
             ...args,
             data: withTenantData(args?.data, tenantId),
           });
+        };
       }
 
       if (methodName === 'upsert') {
         return (args: any) => {
           assertNoTenantChange(args?.update, tenantId, target);
+          assertNoNestedWrite(args?.create, target);
+          assertNoNestedWrite(args?.update, target);
           return original.call(del, {
             ...withTenantWhere(args, tenantId),
             create: withTenantData(args?.create, tenantId),

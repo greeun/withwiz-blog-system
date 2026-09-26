@@ -5,7 +5,8 @@
  * - 조건(where)을 받는 조회·변경 메서드에는 where.tenantId 를 강제한다.
  * - 생성 메서드(create·createMany·createManyAndReturn·upsert.create)에는 data.tenantId 를 강제한다.
  * - 변경 data 로 레코드를 다른 테넌트로 옮기는 호출은 거부한다.
- * - 격리를 보장할 수 없는 호출(원시 쿼리, $extends, 배열형 $transaction, 알 수 없는 모델 메서드)은 명시적으로 거부한다.
+ * - 격리를 보장할 수 없는 호출(원시 쿼리, $extends, 배열형 $transaction, 알 수 없는 모델 메서드,
+ *   관계 필드의 중첩 쓰기)은 명시적으로 거부한다.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { createTenantProxy } from '@withwiz/blog-system/core';
@@ -208,5 +209,43 @@ describe('blog-core 태그 동기화와 테넌트 스코프', () => {
     expect(postTag.createMany.mock.calls[0][0].data).toEqual([{ postId: 'post-1', tagId: 'tag-1', tenantId: TENANT_ID }]);
     expect(postTag.deleteMany.mock.calls[0][0].where).toEqual({ postId: 'post-1', tenantId: TENANT_ID });
     expect(postTag.createMany.mock.calls[1][0].data).toEqual([{ postId: 'post-1', tagId: 'tag-2', tenantId: TENANT_ID }]);
+  });
+
+  it.each([
+    ['create', (p: any) => p.post.create({ data: { title: 'x', tags: { create: [{ name: 't' }] } } })],
+    ['create connect', (p: any) => p.post.create({ data: { title: 'x', author: { connect: { id: 'other-user' } } } })],
+    ['createMany', (p: any) => p.post.createMany({ data: [{ title: 'a' }, { title: 'b', tags: { connectOrCreate: [] } }] })],
+    ['update', (p: any) => p.post.update({ where: { id: 'p-1' }, data: { tags: { set: [{ id: 'other-tag' }] } } })],
+    ['updateMany', (p: any) => p.post.updateMany({ where: {}, data: { author: { disconnect: true } } })],
+    ['upsert.create', (p: any) => p.post.upsert({ where: { id: 'p-1' }, create: { tags: { create: { name: 't' } } }, update: {} })],
+    ['upsert.update', (p: any) => p.post.upsert({ where: { id: 'p-1' }, create: {}, update: { tags: { deleteMany: {} } } })],
+  ])('BS-TX-12: 관계 필드의 중첩 쓰기(%s)는 거부하고 원본을 호출하지 않는다', (_name, call) => {
+    const prisma = createPrisma();
+    const proxy = createTenantProxy(prisma, TENANT_ID);
+
+    expect(() => call(proxy)).toThrow('중첩 쓰기는 격리를 보장할 수 없습니다');
+    for (const method of DELEGATE_METHODS) {
+      expect(prisma.post[method]).not.toHaveBeenCalled();
+    }
+  });
+
+  it('BS-TX-13: 스칼라 갱신 연산·Json 값·Date 는 중첩 쓰기로 보지 않는다', async () => {
+    const prisma = createPrisma();
+    const proxy = createTenantProxy(prisma, TENANT_ID);
+
+    await proxy.post.update({
+      where: { id: 'p-1' },
+      data: {
+        title: { set: '새 제목' },
+        viewCount: { increment: 1 },
+        publishedAt: new Date('2026-01-01'),
+        blocks: { type: 'doc', content: [{ type: 'paragraph' }] },
+        meta: { create: '작성 도구 이름', source: 'import' },
+      },
+    });
+    await proxy.post.create({ data: { title: 'x', meta: {} } });
+
+    expect(prisma.post.update).toHaveBeenCalledTimes(1);
+    expect(prisma.post.create).toHaveBeenCalledTimes(1);
   });
 });
