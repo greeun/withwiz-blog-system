@@ -5,6 +5,7 @@
  * - 플랫폼 수준 작업(전체 테넌트 목록·생성·비활성화, 요금제 관리, 전체 도메인 목록)은 SUPER_ADMIN 만 허용한다.
  * - 테넌트 수준 작업은 해당 테넌트에 ADMIN 이상 역할로 소속된 사용자만 허용한다.
  * - 인증 정보가 없으면 401, 권한을 확인할 수 없거나 권한이 없으면 403 으로 거부한다(fail-closed).
+ * - 인가는 입력 검증·기능 비활성 응답보다 먼저 확인한다. 권한이 없는 사용자는 400·501 을 받지 않는다.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -537,5 +538,98 @@ describe('createBlogSystem multi 모드 조립', () => {
     );
     expect(prisma.tenant.findUnique).not.toHaveBeenCalled();
     expect(prisma.subscription.findFirst).not.toHaveBeenCalled();
+  });
+});
+
+describe('인가를 입력 검증보다 먼저 확인', () => {
+  const NON_MEMBER_ROUTES = () => {
+    const billingService = createBillingService();
+    const domainService = createDomainService();
+    return {
+      billingService,
+      domainService,
+      billing: createBillingRoutes(billingService, createPlanService(), createTenantUserService()),
+      domain: createDomainRoutes(domainService, createTenantUserService()),
+    };
+  };
+
+  it('BS-AZ-23: 소속되지 않은 테넌트의 필수 입력 누락 요청은 400 이 아니라 403 이다', async () => {
+    const { billing, domain, billingService, domainService } = NON_MEMBER_ROUTES();
+
+    await expectRejected(
+      await billing.checkout.POST(json('http://localhost/api/billing/checkout', 'POST', { tenantId: 't-other' })),
+      403,
+    );
+    await expectRejected(
+      await billing.portal.POST(json('http://localhost/api/billing/portal', 'POST', { tenantId: 't-other' })),
+      403,
+    );
+    await expectRejected(await domain.add.POST(json('http://localhost/api/domains', 'POST', { tenantId: 't-other' })), 403);
+    await expectRejected(
+      await domain.add.POST(json('http://localhost/api/domains', 'POST', { tenantId: 't-other', domain: 'invalid domain!!!' })),
+      403,
+    );
+    await expectRejected(await domain.verify.POST(json('http://localhost/api/domains/verify', 'POST', { tenantId: 't-other' })), 403);
+    await expectRejected(await domain.status.GET(new Request('http://localhost/api/domains/status?tenantId=t-other')), 403);
+    expect(billingService.createCheckoutSession).not.toHaveBeenCalled();
+    expect(billingService.createPortalSession).not.toHaveBeenCalled();
+    expect(domainService.addCustomDomain).not.toHaveBeenCalled();
+    expect(domainService.verifyDomain).not.toHaveBeenCalled();
+    expect(domainService.checkVerification).not.toHaveBeenCalled();
+  });
+
+  it('BS-AZ-24: tenantId 가 없는 billing·domain 테넌트 작업은 400 이 아니라 403 이다', async () => {
+    const { billing, domain } = NON_MEMBER_ROUTES();
+
+    await expectRejected(
+      await billing.checkout.POST(
+        json('http://localhost/api/billing/checkout', 'POST', { planId: 'plan-1', successUrl: 'http://s', cancelUrl: 'http://c' }),
+      ),
+      403,
+    );
+    await expectRejected(await billing.portal.POST(json('http://localhost/api/billing/portal', 'POST', { returnUrl: 'http://r' })), 403);
+    await expectRejected(await billing.subscription.GET(new Request('http://localhost/api/billing/subscription')), 403);
+    await expectRejected(await billing.usage.GET(new Request('http://localhost/api/billing/usage')), 403);
+    await expectRejected(await domain.add.POST(json('http://localhost/api/domains', 'POST', { domain: 'blog.example.com' })), 403);
+    await expectRejected(
+      await domain.verify.POST(json('http://localhost/api/domains/verify', 'POST', { domain: 'blog.example.com' })),
+      403,
+    );
+    await expectRejected(await domain.status.GET(new Request('http://localhost/api/domains/status?domain=blog.example.com')), 403);
+    await expectRejected(await domain.remove.DELETE(new Request('http://localhost/api/domains', { method: 'DELETE' })), 403);
+  });
+
+  it('BS-AZ-25: 소속 ADMIN 의 필수 입력 누락은 인가를 통과한 뒤 400 이다', async () => {
+    const billing = createBillingRoutes(
+      createBillingService(),
+      createPlanService(),
+      createTenantUserService({ 't-1:u-1': TenantRole.ADMIN }),
+    );
+    const domain = createDomainRoutes(createDomainService(), createTenantUserService({ 't-1:u-1': TenantRole.ADMIN }));
+
+    expect((await billing.checkout.POST(json('http://localhost/api/billing/checkout', 'POST', { tenantId: 't-1' }))).status).toBe(400);
+    expect((await billing.portal.POST(json('http://localhost/api/billing/portal', 'POST', { tenantId: 't-1' }))).status).toBe(400);
+    expect((await domain.add.POST(json('http://localhost/api/domains', 'POST', { tenantId: 't-1' }))).status).toBe(400);
+    expect((await domain.verify.POST(json('http://localhost/api/domains/verify', 'POST', { tenantId: 't-1' }))).status).toBe(400);
+    expect((await domain.status.GET(new Request('http://localhost/api/domains/status?tenantId=t-1'))).status).toBe(400);
+  });
+
+  it('BS-AZ-26: tenantUserService 없이 만든 테넌트 라우트의 users.* 는 501 이 아니라 403 이다', async () => {
+    const routes = createTenantRoutes(createTenantService());
+    const id = params({ id: 't-1' });
+
+    await expectRejected(await routes.users.list.GET(new Request('http://localhost/api/tenants/t-1/users'), id), 403);
+    await expectRejected(
+      await routes.users.add.POST(json('http://localhost/api/tenants/t-1/users', 'POST', { userId: 'u-2', role: 'EDITOR' }), id),
+      403,
+    );
+    await expectRejected(
+      await routes.users.updateRole.PATCH(json('http://localhost/api/tenants/t-1/users', 'PATCH', { userId: 'u-2', role: 'EDITOR' }), id),
+      403,
+    );
+    await expectRejected(
+      await routes.users.remove.DELETE(json('http://localhost/api/tenants/t-1/users', 'DELETE', { userId: 'u-2' }), id),
+      403,
+    );
   });
 });

@@ -55,14 +55,18 @@ export function requireSuperAdmin(context: IApiContext): NextResponse | null {
  * - 멤버십 서비스 없음, tenantId 없음, 비소속, 역할 부족 → 403
  *
  * 시스템 역할(SUPER_ADMIN 포함)은 테넌트 멤버십을 대신하지 않는다.
- * 통과하면 요청자의 테넌트 역할을 돌려준다.
+ * 통과하면 요청자의 테넌트 역할과, 확인에 사용한 `tenantId`·`tenantUserService` 를 돌려준다.
+ * 호출자는 인가를 입력 검증보다 먼저 호출하고, 이후에는 반환된 값을 사용한다.
  */
 export async function requireTenantRole(
   context: IApiContext,
   tenantUserService: TenantUserService | undefined,
   tenantId: string | null | undefined,
   requiredRole: TenantRole = TenantRole.ADMIN,
-): Promise<{ ok: true; role: TenantRole } | Rejection> {
+): Promise<
+  | { ok: true; role: TenantRole; tenantId: string; tenantUserService: TenantUserService }
+  | Rejection
+> {
   const unauthenticated = requireAuthenticatedUser(context);
   if (unauthenticated) return { ok: false, response: unauthenticated };
 
@@ -75,7 +79,7 @@ export async function requireTenantRole(
     return { ok: false, response: reject(403, '해당 테넌트에 대한 권한이 없습니다.') };
   }
 
-  return { ok: true, role };
+  return { ok: true, role, tenantId, tenantUserService };
 }
 
 /** `actorRole` 이 `targetRole` 이상 수준이면 true. 알 수 없는 역할은 0 수준으로 본다. */
