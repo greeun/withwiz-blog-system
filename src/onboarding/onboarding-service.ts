@@ -3,6 +3,7 @@ import type { TenantUserService } from '../tenant/tenant-user-service';
 import type { BlogService } from '@withwiz/blog-core/services';
 import type { Tenant, TenantUser } from '../types/tenant';
 import { TenantRole } from '../types/tenant';
+import { TenantSlugSchema } from '../validators/tenant.validator';
 
 export interface OnboardingInput {
   tenantName: string;
@@ -49,6 +50,14 @@ export function createOnboardingService(
 ): OnboardingService {
   return {
     async onboardTenant(data: OnboardingInput): Promise<OnboardingResult> {
+      // 라우트를 거치지 않고 직접 호출하는 경로도 있으므로 테넌트를 만들기 전에 슬러그 규칙을 확인한다.
+      const slug = TenantSlugSchema.safeParse(data.tenantSlug);
+      if (!slug.success) {
+        throw new Error(
+          `유효하지 않은 슬러그입니다: ${slug.error.issues[0]?.message ?? data.tenantSlug}`,
+        );
+      }
+
       const categories = data.categories ?? DEFAULT_CATEGORIES;
 
       const categoryMap: Record<string, { label: string }> = {};

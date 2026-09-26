@@ -1,5 +1,5 @@
 /**
- * Task 13: onboarding-service (createOnboardingService) 테스트 (7건)
+ * Task 13: onboarding-service (createOnboardingService) 테스트 (8건)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createOnboardingService } from '@withwiz/blog-system/onboarding';
@@ -179,4 +179,14 @@ describe('createOnboardingService', () => {
     const createCall = tenantService.create.mock.calls[0][0];
     expect(createCall.planId).toBe('plan-1');
   });
+
+  it.each(['나의-블로그', 'ab', 'My-Blog', '-blog', 'a'.repeat(64)])(
+    'BS-OB-08: 슬러그 규칙에 맞지 않는 %s 는 테넌트를 만들기 전에 거부한다',
+    async (tenantSlug) => {
+      await expect(service.onboardTenant({ tenantName: '테스트 블로그', tenantSlug, ownerUserId: 'u-1' }))
+        .rejects.toThrow('유효하지 않은 슬러그입니다');
+      expect(tenantService.create).not.toHaveBeenCalled();
+      expect(tenantUserService.addUser).not.toHaveBeenCalled();
+    },
+  );
 });

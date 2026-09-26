@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 const SLUG_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 
-const slugSchema = z
+/** 테넌트 슬러그 규칙. 서브도메인으로 쓰이므로 3~63자 영소문자·숫자·하이픈만 허용한다. */
+export const TenantSlugSchema = z
   .string()
   .min(3, '슬러그는 최소 3자 이상이어야 합니다')
   .max(63, '슬러그는 최대 63자까지 허용됩니다')
@@ -43,7 +44,7 @@ export const CreateTenantSchema = z.object({
     .string()
     .min(1, '이름은 필수 항목입니다')
     .max(100, '이름은 최대 100자까지 허용됩니다'),
-  slug: slugSchema,
+  slug: TenantSlugSchema,
   logo: z.string().url('올바른 URL 형식이 아닙니다').optional(),
   planId: z.string().cuid('올바른 플랜 ID 형식이 아닙니다').optional(),
   settings: tenantSettingsSchema,
@@ -55,12 +56,30 @@ export const UpdateTenantSchema = z.object({
     .min(1, '이름은 비어있을 수 없습니다')
     .max(100, '이름은 최대 100자까지 허용됩니다')
     .optional(),
-  slug: slugSchema.optional(),
+  slug: TenantSlugSchema.optional(),
   logo: z.string().url('올바른 URL 형식이 아닙니다').optional(),
   customDomain: customDomainSchema.optional(),
   planId: z.string().cuid('올바른 플랜 ID 형식이 아닙니다').optional(),
   isActive: z.boolean().optional(),
 });
 
+const tenantNameSchema = z
+  .string()
+  .min(1, '이름은 필수입니다')
+  .max(100, '이름은 최대 100자까지 허용됩니다');
+
+/** 온보딩 요청 스키마. 이름·슬러그는 CreateTenantSchema 와 같은 규칙을 쓴다. */
+export const OnboardingSchema = z.object({
+  tenantName: tenantNameSchema,
+  tenantSlug: TenantSlugSchema,
+  ownerUserId: z.string().min(1, 'ownerUserId는 필수입니다'),
+  categories: z
+    .array(z.object({ key: z.string().min(1), label: z.string().min(1) }))
+    .optional(),
+  createSamplePost: z.boolean().optional(),
+  planId: z.string().min(1).optional(),
+});
+
+export type OnboardingSchemaType = z.infer<typeof OnboardingSchema>;
 export type CreateTenantSchemaType = z.infer<typeof CreateTenantSchema>;
 export type UpdateTenantSchemaType = z.infer<typeof UpdateTenantSchema>;

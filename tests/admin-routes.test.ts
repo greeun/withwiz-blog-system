@@ -1,5 +1,5 @@
 /**
- * Task 17: admin-routes 헬퍼 테스트 (9건)
+ * Task 17: admin-routes 헬퍼 테스트 (11건)
  *
  * verifySuperAdmin, safeCount는 비공개 함수이므로
  * createSuperAdminRoutes 반환 핸들러를 통해 간접 테스트한다.
@@ -215,5 +215,43 @@ describe('admin-routes 헬퍼', () => {
 
     expect(response.status).toBe(400);
     expect(body.error.message).toContain('이미 다른 테넌트에서 사용 중인 도메인');
+  });
+
+  // ── onboarding.create 입력 검증 ──
+  const superAdminPost = (body: unknown) => ({
+    request: new Request('http://localhost/api/admin/onboarding', { method: 'POST', body: JSON.stringify(body) }),
+    user: { id: 'super-1', role: SystemRole.SUPER_ADMIN },
+    metadata: {},
+  });
+
+  it('BS-AR-10: onboarding.create — 슬러그 규칙에 맞지 않으면 400 이고 온보딩하지 않는다', async () => {
+    const onboardingService = { onboardTenant: vi.fn() };
+    const withOnboarding = createSuperAdminRoutes(tenantService, tenantUserService, prisma, onboardingService as any);
+
+    const response = await withOnboarding.onboarding.create.POST(
+      superAdminPost({ tenantName: '나의 블로그', tenantSlug: '나의-블로그', ownerUserId: 'u-1' }) as any,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.details.tenantSlug).toBeDefined();
+    expect(onboardingService.onboardTenant).not.toHaveBeenCalled();
+  });
+
+  it('BS-AR-11: onboarding.create — 유효한 입력은 검증된 값으로 온보딩하고 createSamplePost 기본값은 false 이다', async () => {
+    const onboardingService = { onboardTenant: vi.fn().mockResolvedValue({ tenant: { id: 't-new' } }) };
+    const withOnboarding = createSuperAdminRoutes(tenantService, tenantUserService, prisma, onboardingService as any);
+
+    const response = await withOnboarding.onboarding.create.POST(
+      superAdminPost({ tenantName: '나의 블로그', tenantSlug: 'my-blog', ownerUserId: 'u-1', extra: 'x' }) as any,
+    );
+
+    expect(response.status).toBe(201);
+    expect(onboardingService.onboardTenant).toHaveBeenCalledWith({
+      tenantName: '나의 블로그',
+      tenantSlug: 'my-blog',
+      ownerUserId: 'u-1',
+      createSamplePost: false,
+    });
   });
 });

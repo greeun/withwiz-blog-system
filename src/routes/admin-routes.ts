@@ -12,7 +12,7 @@ import type { TenantUserService } from '../tenant/tenant-user-service';
 import type { OnboardingService } from '../onboarding/onboarding-service';
 import type { PrismaClientLike } from '../types/system';
 import { SystemRole } from '../types/system';
-import { UpdateTenantSchema } from '../validators/tenant.validator';
+import { OnboardingSchema, UpdateTenantSchema } from '../validators/tenant.validator';
 import type { ZodSchema } from 'zod';
 
 export interface SuperAdminRoutes {
@@ -542,27 +542,14 @@ export function createSuperAdminRoutes(
 
           const body = await context.request.json();
 
-          if (!body.tenantName || !body.tenantSlug || !body.ownerUserId) {
-            return NextResponse.json(
-              {
-                success: false,
-                error: {
-                  message:
-                    'tenantName, tenantSlug, ownerUserId는 필수입니다.',
-                },
-              },
-              { status: 400 },
-            );
-          }
+          const validation = validateAndParse(OnboardingSchema, body);
+          if (!validation.success) return validation.response;
+          const input = validation.data;
 
           try {
             const result = await onboardingService.onboardTenant({
-              tenantName: body.tenantName,
-              tenantSlug: body.tenantSlug,
-              ownerUserId: body.ownerUserId,
-              categories: body.categories,
-              createSamplePost: body.createSamplePost ?? false,
-              planId: body.planId,
+              ...input,
+              createSamplePost: input.createSamplePost ?? false,
             });
 
             return NextResponse.json(

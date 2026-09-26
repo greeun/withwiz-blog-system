@@ -23,14 +23,24 @@ const DEFAULT_CATEGORY_OPTIONS = [
   { key: 'news', label: '뉴스' },
 ];
 
+/** 서버 슬러그 규칙(TenantSlugSchema)과 같다: 3~63자, 영소문자·숫자·하이픈, 하이픈으로 시작·끝 불가 */
+const SLUG_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+
+function isValidSlug(slug: string): boolean {
+  return slug.length >= 3 && slug.length <= 63 && SLUG_PATTERN.test(slug);
+}
+
+/** 이름에서 슬러그 후보를 만든다. 영문·숫자만 남기므로 한글 이름은 빈 값이 될 수 있다. */
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9가-힣\s-]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
     .replace(/[\s]+/g, '-')
     .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/^-|-$/g, '')
+    .slice(0, 63)
+    .replace(/-$/, '');
 }
 
 export function OnboardingWizard({
@@ -49,6 +59,8 @@ export function OnboardingWizard({
   const [customCategoryKey, setCustomCategoryKey] = useState('');
   const [customCategoryLabel, setCustomCategoryLabel] = useState('');
   const [createSamplePost, setCreateSamplePost] = useState(true);
+
+  const slugValid = isValidSlug(tenantSlug);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -195,12 +207,17 @@ export function OnboardingWizard({
               className="blog-system-admin-input"
             />
             <small>블로그 URL에 사용됩니다: /{tenantSlug || '...'}</small>
+            {tenantSlug && !slugValid && (
+              <small className="blog-system-admin-field-error" role="alert">
+                슬러그는 3~63자의 영소문자, 숫자, 하이픈만 사용할 수 있으며 하이픈으로 시작하거나 끝날 수 없습니다.
+              </small>
+            )}
           </div>
 
           <div className="blog-system-admin-onboarding-actions">
             <button
               onClick={goNext}
-              disabled={!tenantName || !tenantSlug}
+              disabled={!tenantName || !slugValid}
               className="blog-system-admin-btn blog-system-admin-btn-primary"
             >
               다음
