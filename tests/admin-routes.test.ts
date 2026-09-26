@@ -1,5 +1,5 @@
 /**
- * Task 17: admin-routes 헬퍼 테스트 (6건)
+ * Task 17: admin-routes 헬퍼 테스트 (9건)
  *
  * verifySuperAdmin, safeCount는 비공개 함수이므로
  * createSuperAdminRoutes 반환 핸들러를 통해 간접 테스트한다.
@@ -173,5 +173,47 @@ describe('admin-routes 헬퍼', () => {
     expect(body.data.items).toHaveLength(1);
     expect(body.data).toMatchObject({ page: 1, limit: 10, total: 25, totalPages: 3 });
     expect(body.data.pagination).toBeUndefined();
+  });
+
+  // ── tenants.update 입력 검증 ──
+  const superAdminPut = (body: unknown) => ({
+    request: new Request('http://localhost/api/admin/tenants/t-1', { method: 'PUT', body: JSON.stringify(body) }),
+    user: { id: 'super-1', role: SystemRole.SUPER_ADMIN },
+    metadata: {},
+  });
+  const idProps = { params: Promise.resolve({ id: 't-1' }) };
+
+  it('BS-AR-07: tenants.update — 스키마에 없는 필드는 버리고 검증된 값만 서비스에 넘긴다', async () => {
+    tenantService.getById.mockResolvedValue({ id: 't-1' });
+    tenantService.update.mockResolvedValue({ id: 't-1', name: '새 이름' });
+
+    const response = await routes.tenants.update.PUT(
+      superAdminPut({ name: '새 이름', customDomain: 'blog.custom.com', settings: { domainVerification: { status: 'verified' } }, id: 't-9' }) as any,
+      idProps,
+    );
+
+    expect(response.status).toBe(200);
+    expect(tenantService.update).toHaveBeenCalledWith('t-1', { name: '새 이름', customDomain: 'blog.custom.com' });
+  });
+
+  it('BS-AR-08: tenants.update — 형식이 틀린 값은 400 이고 서비스를 호출하지 않는다', async () => {
+    const response = await routes.tenants.update.PUT(superAdminPut({ customDomain: 'invalid domain!!!' }) as any, idProps);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.details.customDomain).toBeDefined();
+    expect(tenantService.getById).not.toHaveBeenCalled();
+    expect(tenantService.update).not.toHaveBeenCalled();
+  });
+
+  it('BS-AR-09: tenants.update — 서비스의 도메인 중복 오류는 400 으로 응답한다', async () => {
+    tenantService.getById.mockResolvedValue({ id: 't-1' });
+    tenantService.update.mockRejectedValue(new Error('이미 다른 테넌트에서 사용 중인 도메인입니다: blog.custom.com'));
+
+    const response = await routes.tenants.update.PUT(superAdminPut({ customDomain: 'blog.custom.com' }) as any, idProps);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.message).toContain('이미 다른 테넌트에서 사용 중인 도메인');
   });
 });

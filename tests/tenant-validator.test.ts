@@ -1,5 +1,5 @@
 /**
- * Task 3: tenant-validator (Zod 스키마) 테스트 (16건)
+ * Task 3: tenant-validator (Zod 스키마) 테스트 (18건)
  */
 import { describe, it, expect } from 'vitest';
 import { CreateTenantSchema, UpdateTenantSchema } from '@withwiz/blog-system/validators';
@@ -110,6 +110,25 @@ describe('UpdateTenantSchema', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.slug).toBe('new-slug');
+    }
+  });
+
+  it('BS-TV-17: customDomain 형식이 틀리면 실패하고, 올바른 도메인은 통과한다', () => {
+    expect(UpdateTenantSchema.safeParse({ customDomain: '' }).success).toBe(false);
+    expect(UpdateTenantSchema.safeParse({ customDomain: 'invalid domain!!!' }).success).toBe(false);
+    expect(UpdateTenantSchema.safeParse({ customDomain: 'localhost' }).success).toBe(false);
+    expect(UpdateTenantSchema.safeParse({ customDomain: 'blog.custom.com' }).success).toBe(true);
+  });
+
+  it('BS-TV-18: 스키마에 없는 필드(settings 등)는 결과에서 제거된다', () => {
+    const result = UpdateTenantSchema.safeParse({
+      name: '새 이름',
+      settings: { domainVerification: { status: 'verified' } },
+      createdAt: '2020-01-01',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ name: '새 이름' });
     }
   });
 });

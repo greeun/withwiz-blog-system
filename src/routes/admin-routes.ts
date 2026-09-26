@@ -12,6 +12,8 @@ import type { TenantUserService } from '../tenant/tenant-user-service';
 import type { OnboardingService } from '../onboarding/onboarding-service';
 import type { PrismaClientLike } from '../types/system';
 import { SystemRole } from '../types/system';
+import { UpdateTenantSchema } from '../validators/tenant.validator';
+import type { ZodSchema } from 'zod';
 
 export interface SuperAdminRoutes {
   dashboard: { GET: ReturnType<typeof withAuthApi> };
@@ -38,6 +40,29 @@ async function getRouteParam(props: unknown, key: string): Promise<string> {
     props as { params: Promise<Record<string, string>> }
   ).params;
   return value;
+}
+
+function validateAndParse<T>(
+  schema: ZodSchema<T>,
+  data: unknown,
+): { success: true; data: T } | { success: false; response: NextResponse } {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: '입력값 검증에 실패했습니다.',
+            details: result.error.flatten().fieldErrors,
+          },
+        },
+        { status: 400 },
+      ),
+    };
+  }
+  return { success: true, data: result.data };
 }
 
 // toolkit의 IUser.role은 'USER' | 'ADMIN'이지만,
@@ -212,6 +237,11 @@ export function createSuperAdminRoutes(
           const id = await getRouteParam(props, 'id');
           const body = await context.request.json();
 
+          // 스키마에 없는 필드(settings 등)는 버리고, 형식이 틀린 값은 400 으로 거부한다.
+          // customDomain 은 슈퍼 관리자가 DNS 인증 없이 직접 지정할 수 있다(중복은 서비스가 확인).
+          const validation = validateAndParse(UpdateTenantSchema, body);
+          if (!validation.success) return validation.response;
+
           const existing = await tenantService.getById(id);
           if (!existing) {
             return NextResponse.json(
@@ -224,7 +254,7 @@ export function createSuperAdminRoutes(
           }
 
           try {
-            const tenant = await tenantService.update(id, body);
+            const tenant = await tenantService.update(id, validation.data);
             return NextResponse.json({ success: true, data: tenant });
           } catch (error) {
             return NextResponse.json(

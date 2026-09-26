@@ -1,5 +1,5 @@
 /**
- * Task 4: tenant-service (createTenantService) 테스트 (17건)
+ * Task 4: tenant-service (createTenantService) 테스트 (18건)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTenantService } from '@withwiz/blog-system/tenant';
@@ -226,5 +226,16 @@ describe('createTenantService', () => {
       where: { id: 't-1' },
       data: { settings: expect.objectContaining({ domainVerification }) },
     });
+  });
+
+  it('BS-TS-18: update — customDomain 을 다른 테넌트가 사용 중이면 Error, 자기 자신은 제외하고 확인한다', async () => {
+    prisma.tenant.findFirst.mockResolvedValue({ id: 't-2', customDomain: 'blog.custom.com' });
+
+    await expect(service.update('t-1', { customDomain: 'blog.custom.com' }))
+      .rejects.toThrow('이미 다른 테넌트에서 사용 중인 도메인');
+    expect(prisma.tenant.findFirst).toHaveBeenCalledWith({
+      where: { customDomain: 'blog.custom.com', NOT: { id: 't-1' } },
+    });
+    expect(prisma.tenant.update).not.toHaveBeenCalled();
   });
 });

@@ -85,6 +85,15 @@ export function createTenantService(prisma: PrismaClientLike): TenantService {
         }
       }
 
+      if (data.customDomain) {
+        const existing = await prisma.tenant.findFirst({
+          where: { customDomain: data.customDomain, NOT: { id } },
+        });
+        if (existing) {
+          throw new Error(`이미 다른 테넌트에서 사용 중인 도메인입니다: ${data.customDomain}`);
+        }
+      }
+
       return prisma.tenant.update({
         where: { id },
         data,

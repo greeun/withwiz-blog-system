@@ -11,6 +11,13 @@ const slugSchema = z
     '슬러그는 영소문자, 숫자, 하이픈만 사용 가능하며 하이픈으로 시작/끝날 수 없습니다',
   );
 
+const DOMAIN_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+const customDomainSchema = z
+  .string()
+  .max(253, '도메인은 최대 253자까지 허용됩니다')
+  .regex(DOMAIN_PATTERN, '유효하지 않은 도메인 형식입니다');
+
 const tenantSettingsSchema = z
   .object({
     blogConfig: z.record(z.string(), z.unknown()).optional(),
@@ -50,7 +57,7 @@ export const UpdateTenantSchema = z.object({
     .optional(),
   slug: slugSchema.optional(),
   logo: z.string().url('올바른 URL 형식이 아닙니다').optional(),
-  customDomain: z.string().optional(),
+  customDomain: customDomainSchema.optional(),
   planId: z.string().cuid('올바른 플랜 ID 형식이 아닙니다').optional(),
   isActive: z.boolean().optional(),
 });
