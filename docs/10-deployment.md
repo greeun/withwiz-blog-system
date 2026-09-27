@@ -117,8 +117,8 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 | 자체 서버 | crontab + curl |
 | GitHub Pages/Actions | GitHub Actions scheduled workflow |
 
-> **주의**: 이 프로젝트(`your-blog-homepage`)는 **Vercel을 사용하지 않는다.**
-> 따라서 `vercel.json`을 생성하지 말 것.
+> **참고**: Vercel 을 쓰지 않는 배포 환경에서는 `vercel.json` 이 필요하지 않다.
+> 위 표에서 호스팅에 맞는 Cron 방식을 선택한다.
 
 ## 보안 체크리스트
 
