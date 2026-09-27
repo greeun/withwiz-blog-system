@@ -165,13 +165,13 @@ describe('블로그 라우트 핸들러', () => {
   });
 
   it('BS-BR-03: 공개 글 목록 — search 필터 적용', async () => {
-    const req = new Request('http://localhost/api/blog?search=ballet');
+    const req = new Request('http://localhost/api/blog?search=keyword');
     const res = await routes.public.list.GET(req);
     const body = await res.json();
 
     expect(body.success).toBe(true);
     expect(blogService.listPublished).toHaveBeenCalledWith(
-      expect.objectContaining({ search: 'ballet' }),
+      expect.objectContaining({ search: 'keyword' }),
     );
   });
 
