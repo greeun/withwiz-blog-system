@@ -151,7 +151,7 @@ interface TenantSettings {
 
 ```ts
 await tenantService.updateSettings(tenantId, {
-  theme: { primaryColor: '#D4AF37' },
+  theme: { primaryColor: '#2563EB' },
 });
 ```
 

@@ -66,12 +66,6 @@ function findPlatformControlledFields(body: unknown): string[] {
   );
 }
 
-const serviceDisabledResponse = () =>
-  NextResponse.json(
-    { success: false, error: { message: '사용자 관리 기능이 비활성화되어 있습니다.' } },
-    { status: 501 },
-  );
-
 export interface TenantRoutes {
   list: { GET: ReturnType<typeof withAuthApi> };
   create: { POST: ReturnType<typeof withAuthApi> };
@@ -308,15 +302,15 @@ export function createTenantRoutes(
         GET: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const unauthenticated = requireAuthenticatedUser(context);
           if (unauthenticated) return unauthenticated;
-          if (!tenantUserService) return serviceDisabledResponse();
 
           const tenantId = await getRouteParam(props, 'id');
           const access = await requireTenantRole(context, tenantUserService, tenantId);
           if (!access.ok) return access.response;
+          const members = access.tenantUserService;
 
           const { page, limit } = parsePagination(context.request);
 
-          const result = await tenantUserService.listUsers(tenantId, {
+          const result = await members.listUsers(tenantId, {
             page,
             limit,
           });
@@ -329,11 +323,11 @@ export function createTenantRoutes(
         POST: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const unauthenticated = requireAuthenticatedUser(context);
           if (unauthenticated) return unauthenticated;
-          if (!tenantUserService) return serviceDisabledResponse();
 
           const tenantId = await getRouteParam(props, 'id');
           const access = await requireTenantRole(context, tenantUserService, tenantId);
           if (!access.ok) return access.response;
+          const members = access.tenantUserService;
 
           const body = await context.request.json();
 
@@ -364,7 +358,7 @@ export function createTenantRoutes(
           }
 
           try {
-            const tenantUser = await tenantUserService.addUser(
+            const tenantUser = await members.addUser(
               tenantId,
               body.userId,
               body.role as TenantRole,
@@ -395,11 +389,11 @@ export function createTenantRoutes(
         PATCH: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const unauthenticated = requireAuthenticatedUser(context);
           if (unauthenticated) return unauthenticated;
-          if (!tenantUserService) return serviceDisabledResponse();
 
           const tenantId = await getRouteParam(props, 'id');
           const access = await requireTenantRole(context, tenantUserService, tenantId);
           if (!access.ok) return access.response;
+          const members = access.tenantUserService;
 
           const body = await context.request.json();
 
@@ -426,7 +420,7 @@ export function createTenantRoutes(
           }
 
           // 부여할 역할과 대상의 현재 역할이 모두 요청자 역할 이하여야 한다.
-          const targetRole = await tenantUserService.getUserRole(tenantId, body.userId);
+          const targetRole = await members.getUserRole(tenantId, body.userId);
           if (
             !hasRoleLevel(access.role, body.role as TenantRole) ||
             (targetRole && !hasRoleLevel(access.role, targetRole))
@@ -435,7 +429,7 @@ export function createTenantRoutes(
           }
 
           try {
-            const tenantUser = await tenantUserService.updateRole(
+            const tenantUser = await members.updateRole(
               tenantId,
               body.userId,
               body.role as TenantRole,
@@ -463,11 +457,11 @@ export function createTenantRoutes(
         DELETE: withAuthApi(async (context: IApiContext, props?: unknown) => {
           const unauthenticated = requireAuthenticatedUser(context);
           if (unauthenticated) return unauthenticated;
-          if (!tenantUserService) return serviceDisabledResponse();
 
           const tenantId = await getRouteParam(props, 'id');
           const access = await requireTenantRole(context, tenantUserService, tenantId);
           if (!access.ok) return access.response;
+          const members = access.tenantUserService;
 
           const body = await context.request.json();
 
@@ -481,13 +475,13 @@ export function createTenantRoutes(
             );
           }
 
-          const targetRole = await tenantUserService.getUserRole(tenantId, body.userId);
+          const targetRole = await members.getUserRole(tenantId, body.userId);
           if (targetRole && !hasRoleLevel(access.role, targetRole)) {
             return forbidRoleEscalation();
           }
 
           try {
-            await tenantUserService.removeUser(tenantId, body.userId);
+            await members.removeUser(tenantId, body.userId);
 
             return NextResponse.json({
               success: true,

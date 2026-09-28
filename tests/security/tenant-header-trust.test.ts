@@ -25,6 +25,7 @@ vi.mock('@withwiz/toolkit/next/utils/api-helpers', () => ({
 import { createBlogRoutes } from '@withwiz/blog-system/routes';
 import {
   createTenantResolver,
+  createTenantUserService,
   createTenantResolutionMiddleware,
   resolveTenantFromRequest,
   TENANT_ID_HEADER,
@@ -87,6 +88,7 @@ describe('블로그 라우트 테넌트 해석', () => {
       createScopedService,
       tenantResolver: createTenantResolver(prisma),
       baseDomain: BASE_DOMAIN,
+      tenantUserService: createTenantUserService(prisma),
     });
 
     const res = await routes.admin.list.GET(hostRequest(`tenant-a.${BASE_DOMAIN}`, { [TENANT_ID_HEADER]: 'tenant-b' }));
@@ -95,6 +97,10 @@ describe('블로그 라우트 테넌트 해석', () => {
     expect(createScopedService).toHaveBeenCalledTimes(1);
     expect(createScopedService).toHaveBeenCalledWith('id-a');
     expect(scoped.listAll).toHaveBeenCalled();
+    // 멤버십도 헤더가 아닌 호스트명의 테넌트로 확인한다
+    expect(prisma.tenantUser.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ tenantId_userId: expect.objectContaining({ tenantId: 'id-a' }) }) }),
+    );
     expect(prisma.tenant.findFirst).not.toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ slug: 'tenant-b' }) }),
     );
@@ -124,6 +130,7 @@ describe('블로그 라우트 테넌트 해석', () => {
       createScopedService,
       tenantResolver: createTenantResolver(prisma),
       baseDomain: BASE_DOMAIN,
+      tenantUserService: createTenantUserService(prisma),
     });
 
     const res = await routes.admin.list.GET(hostRequest('unknown.example.com', { [TENANT_ID_HEADER]: 'tenant-b' }));

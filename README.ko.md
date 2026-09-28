@@ -410,10 +410,18 @@ export async function getCurrentTenantId() {
 
 | 메서드 | 주입 위치 |
 |---|---|
-| `findMany`, `findFirst`, `findUnique`, `count`, `groupBy` | `where.tenantId = X` |
-| `create` | `data.tenantId = X` |
-| `update`, `updateMany`, `delete`, `deleteMany` | `where.tenantId = X` |
-| `$transaction` | 트랜잭션 내부 `tx` 객체도 동일하게 프록시 |
+| `findMany`, `findFirst`, `findFirstOrThrow`, `findUnique`, `findUniqueOrThrow`, `count`, `aggregate`, `groupBy` | `where.tenantId = X` |
+| `create`, `createMany`, `createManyAndReturn` | `data.tenantId = X` (배열이면 모든 항목) |
+| `update`, `updateMany`, `updateManyAndReturn`, `delete`, `deleteMany` | `where.tenantId = X` (변경 data 로 다른 테넌트로 옮기면 거부) |
+| `upsert` | `where.tenantId = X`, `create.tenantId = X` |
+| `$transaction` | 콜백형만 지원하며 트랜잭션 내부 `tx` 객체도 동일하게 프록시 |
+
+격리를 보장할 수 없는 호출은 원본을 호출하지 않고 예외로 거부한다.
+
+- 원시 쿼리(`$queryRaw`·`$executeRaw` 등), `$extends`, `$use`, 배열형 `$transaction`, 알 수 없는 모델 메서드
+- 관계 필드의 중첩 쓰기(`{ tags: { create: [...] } }`, `{ author: { connect: { id } } }` 등). 관계는 각 모델을 따로 쓴다. Json 컬럼 값도 모든 키가 중첩 쓰기 연산 이름(`create`·`connect` 등)이면 거부된다.
+
+`include`·`select` 로 읽는 관계 모델에는 `tenantId` 를 적용하지 않고, 스칼라 외래 키(예: `tagId`)가 같은 테넌트 레코드를 가리키는지도 확인하지 않는다.
 
 ### 직접 사용
 
@@ -451,7 +459,7 @@ export async function GET(req: Request) {
 2. 시스템이 인증 토큰을 생성
 3. 테넌트가 DNS TXT 레코드 생성: `_withwiz-verify.{domain}` → 토큰 값
 4. 시스템이 TXT 레코드를 검증
-5. 도메인 활성화
+5. 도메인 활성화 (인증에 성공한 뒤에만 `tenant.customDomain` 을 설정한다. 인증 전에는 이 도메인으로 테넌트가 해석되지 않는다)
 
 ### Vercel 통합 (선택)
 
@@ -524,11 +532,11 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## 온보딩
 
-`OnboardingService`는 새 테넌트 셋업을 원자적으로 수행한다:
+`OnboardingService`는 새 테넌트 셋업을 순차적으로 수행한다(트랜잭션이 아니므로 중간에 실패하면 앞 단계는 되돌리지 않는다):
 
 1. **테넌트** — 이름, 슬러그, 설정
-2. **소유자** — `OWNER` 역할의 첫 사용자
-3. **기본 카테고리** — general, notice, tech
+2. **소유자** — 이미 가입한 사용자(`ownerUserId`)를 `OWNER` 역할로 추가
+3. **기본 카테고리** — general, notice, tech (`categories` 로 변경 가능)
 4. **샘플 게시물** (선택)
 5. **플랜 할당** (선택)
 
@@ -536,18 +544,24 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 - 3~63자
 - 소문자, 숫자, 하이픈만 허용
-- 예약어 차단: `www`, `api`, `admin`, `app`, `mail`, `blog`, `static`
+- 온보딩 라우트·`onboardTenant`·테넌트 생성 라우트가 이 규칙을 검증한다(`TenantSlugSchema`, `OnboardingSchema` 공개)
+- 예약어(`www`, `api`, `admin` 등) 차단은 패키지가 하지 않으므로 호스트가 확인한다
 
 ```ts
-const result = await system.onboardingService!.onboard({
+const result = await system.onboardingService!.onboardTenant({
   tenantName: 'My Blog',
   tenantSlug: 'my-blog',
-  ownerEmail: 'owner@example.com',
-  ownerPassword: 'securePassword123',
-  ownerName: 'Blog Owner',
+  ownerUserId: user.id, // 이미 가입한 사용자
+  createSamplePost: true,
   planId: 'free',
 });
-// result.tenant, result.owner, result.tenantUser
+// result.tenant, result.tenantUser, result.samplePostId
+```
+
+슈퍼 관리자 콘솔에서는 `routes.admin.onboarding.create`(슈퍼 관리자 전용)와 `OnboardingWizard` 를 함께 쓸 수 있다. 위저드의 `ownerUserId` 는 필수이며, 소유자 선택 UI 는 호스트가 제공한다.
+
+```tsx
+<OnboardingWizard apiBasePath="/api" ownerUserId={selectedUserId} onComplete={(result) => { /* ... */ }} />
 ```
 
 ## 슈퍼 어드민
@@ -573,10 +587,16 @@ export const POST = system.routes.admin?.deactivateTenant;
 
 - 슈퍼 어드민 라우트와 플랫폼 수준 작업(테넌트 목록·생성·비활성화, billing `adminPlans`, domain `list`)은 JWT 역할이 `SUPER_ADMIN` 이어야 한다.
 - 테넌트 수준 작업은 대상 테넌트에 `ADMIN` 이상 역할로 소속되어야 한다. 시스템 역할(`SUPER_ADMIN` 포함)은 테넌트 소속을 대신하지 않는다.
+- 테넌트 수준 작업은 입력 검증보다 인가를 먼저 확인한다. `tenantId` 가 없거나 멤버십 서비스가 없으면 400·501 이 아니라 403 이다.
 - toolkit `withAdminApi` 가 요구하는 `'ADMIN'` 역할은 필요하지 않다. 토큰이 없으면 401, 권한이 없으면 403 이다.
 - 이 라우트들은 toolkit rate limit 의 `api` 종류를 사용한다.
 
 `routes.auth` 의 `logout`·`me`·`changePassword` 는 로그인한 모든 사용자가 사용할 수 있다.
+
+블로그 관리 라우트(`routes.blog.admin`)는 모드에 따라 인가 방식이 다르다.
+
+- multi 모드: `withAuthApi` 로 인증한 뒤, 요청 호스트명으로 해석한 테넌트의 멤버십을 확인한다. 조회(목록·상세·슬러그 확인·대시보드)는 `VIEWER` 이상, 쓰기(생성·수정·삭제·발행·일괄 처리)는 `EDITOR` 이상이어야 한다. 테넌트를 찾지 못하면 404, 소속이 아니거나 역할이 부족하면 403 이다. 시스템 역할은 멤버십을 대신하지 않는다.
+- single 모드: toolkit `withAdminApi` 로 JWT 역할 `'ADMIN'` 을 확인한다. 태그·댓글 관리 라우트(single 모드 전용)도 같다.
 
 ### 초기 설정
 

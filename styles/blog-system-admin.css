@@ -214,6 +214,10 @@
   margin-top: var(--bsa-spacing-xs);
 }
 
+.blog-system-admin-form-group small.blog-system-admin-field-error {
+  color: var(--bsa-color-danger);
+}
+
 .blog-system-admin-input {
   width: 100%;
   padding: var(--bsa-spacing-sm) var(--bsa-spacing-md);

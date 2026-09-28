@@ -410,10 +410,18 @@ export async function getCurrentTenantId() {
 
 | Method | Injection |
 |---|---|
-| `findMany`, `findFirst`, `findUnique`, `count`, `groupBy` | `where.tenantId = X` |
-| `create` | `data.tenantId = X` |
-| `update`, `updateMany`, `delete`, `deleteMany` | `where.tenantId = X` |
-| `$transaction` | Inner `tx` object is also proxied |
+| `findMany`, `findFirst`, `findFirstOrThrow`, `findUnique`, `findUniqueOrThrow`, `count`, `aggregate`, `groupBy` | `where.tenantId = X` |
+| `create`, `createMany`, `createManyAndReturn` | `data.tenantId = X` (every item for arrays) |
+| `update`, `updateMany`, `updateManyAndReturn`, `delete`, `deleteMany` | `where.tenantId = X` (moving a record to another tenant via data is rejected) |
+| `upsert` | `where.tenantId = X`, `create.tenantId = X` |
+| `$transaction` | Callback form only; the inner `tx` object is also proxied |
+
+Calls whose isolation cannot be guaranteed are rejected with an exception before the original is called:
+
+- Raw queries (`$queryRaw`, `$executeRaw`, ...), `$extends`, `$use`, array-form `$transaction`, unknown model methods
+- Nested relation writes (`{ tags: { create: [...] } }`, `{ author: { connect: { id } } }`, ...). Write each model separately. A Json column value whose keys are all nested-write operation names (`create`, `connect`, ...) is rejected as well.
+
+Related models read via `include`/`select` are not scoped by `tenantId`, and scalar foreign keys (e.g. `tagId`) are not checked to belong to the same tenant.
 
 ### Direct Usage
 
@@ -451,7 +459,7 @@ Custom domains are verified via DNS TXT records:
 2. System generates a verification token
 3. Tenant creates DNS TXT record: `_withwiz-verify.{domain}` → token value
 4. System verifies the TXT record
-5. Domain is activated
+5. Domain is activated (`tenant.customDomain` is set only after verification succeeds; the domain does not resolve to the tenant before that)
 
 ### Optional Vercel Integration
 
@@ -524,11 +532,11 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## Onboarding
 
-The `OnboardingService` atomically creates a new tenant setup:
+The `OnboardingService` creates a new tenant setup step by step (not a transaction; earlier steps are not rolled back if a later one fails):
 
 1. **Tenant** — name, slug, settings
-2. **Owner** — first user with `OWNER` role
-3. **Default categories** — general, notice, tech
+2. **Owner** — an existing user (`ownerUserId`) added with the `OWNER` role
+3. **Default categories** — general, notice, tech (override with `categories`)
 4. **Sample post** (optional)
 5. **Plan assignment** (optional)
 
@@ -536,18 +544,24 @@ The `OnboardingService` atomically creates a new tenant setup:
 
 - 3–63 characters
 - Lowercase letters, digits, hyphens only
-- Reserved words blocked: `www`, `api`, `admin`, `app`, `mail`, `blog`, `static`
+- The onboarding route, `onboardTenant` and the tenant create route enforce these rules (`TenantSlugSchema` and `OnboardingSchema` are exported)
+- Reserved words (`www`, `api`, `admin`, ...) are not blocked by the package; the host must check them
 
 ```ts
-const result = await system.onboardingService!.onboard({
+const result = await system.onboardingService!.onboardTenant({
   tenantName: 'My Blog',
   tenantSlug: 'my-blog',
-  ownerEmail: 'owner@example.com',
-  ownerPassword: 'securePassword123',
-  ownerName: 'Blog Owner',
+  ownerUserId: user.id, // an existing user
+  createSamplePost: true,
   planId: 'free',
 });
-// result.tenant, result.owner, result.tenantUser
+// result.tenant, result.tenantUser, result.samplePostId
+```
+
+In a super admin console, use `routes.admin.onboarding.create` (super admin only) together with `OnboardingWizard`. The wizard's `ownerUserId` prop is required; the host provides the owner selection UI.
+
+```tsx
+<OnboardingWizard apiBasePath="/api" ownerUserId={selectedUserId} onComplete={(result) => { /* ... */ }} />
 ```
 
 ## Super Admin
@@ -573,10 +587,16 @@ Management routes (`routes.admin`, `routes.tenant`, `routes.billing`, `routes.do
 
 - Super admin routes and platform-level operations (tenant list/create/deactivate, billing `adminPlans`, domain `list`) require the JWT role `SUPER_ADMIN`.
 - Tenant-level operations require membership in the target tenant with `ADMIN` or higher. A system role (including `SUPER_ADMIN`) does not replace membership.
+- Tenant-level operations check authorization before input validation. A missing `tenantId` or membership service yields 403, not 400 or 501.
 - The toolkit `'ADMIN'` role required by `withAdminApi` is not needed. Missing token → 401, insufficient permission → 403.
 - These routes use the toolkit `api` rate limit type.
 
 `routes.auth` `logout`, `me` and `changePassword` are available to any signed-in user.
+
+Blog admin routes (`routes.blog.admin`) are authorized differently per mode:
+
+- Multi mode: authenticated with `withAuthApi`, then the requester's membership in the tenant resolved from the request hostname is checked. Reads (list, detail, slug check, dashboard) require `VIEWER` or higher; writes (create, update, delete, publish, bulk) require `EDITOR` or higher. Unknown tenant → 404, non-member or insufficient role → 403. A system role does not replace membership.
+- Single mode: toolkit `withAdminApi` checks the JWT role `'ADMIN'`. Tag and comment admin routes (single mode only) work the same way.
 
 ### Initial Setup
 

@@ -16,6 +16,7 @@
 import { NextResponse } from 'next/server';
 import {
   withPublicApi,
+  withAuthApi,
   withAdminApi,
 } from '@withwiz/toolkit/next/middleware/wrappers';
 import type { TApiHandler } from '@withwiz/toolkit/next/middleware/types';
@@ -136,6 +137,17 @@ export function withPublicRoute(
   handler: TApiHandler,
 ): ReturnType<typeof withPublicApi> {
   return withPublicApi(withRouteErrorHandling(handler));
+}
+
+/**
+ * withAuthApi + 공통 오류 변환
+ *
+ * 인증만 확인하므로 핸들러가 `route-authorization` 의 인가 헬퍼를 반드시 먼저 호출해야 한다.
+ */
+export function withAuthRoute(
+  handler: TApiHandler,
+): ReturnType<typeof withAuthApi> {
+  return withAuthApi(withRouteErrorHandling(handler));
 }
 
 /** withAdminApi + 공통 오류 변환 */

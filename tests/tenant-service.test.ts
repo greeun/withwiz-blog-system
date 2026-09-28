@@ -1,5 +1,5 @@
 /**
- * Task 4: tenant-service (createTenantService) 테스트 (16건)
+ * Task 4: tenant-service (createTenantService) 테스트 (18건)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTenantService } from '@withwiz/blog-system/tenant';
@@ -202,5 +202,40 @@ describe('createTenantService', () => {
     });
 
     expect(result.domainVerification).toEqual(domainVerification);
+  });
+
+  it('BS-TS-17: updateSettings — 요청의 domainVerification 은 무시하고 기존 값을 보존한다', async () => {
+    const domainVerification = {
+      domain: 'blog.custom.com',
+      token: 'abc',
+      status: 'pending' as const,
+      sslStatus: 'pending' as const,
+      createdAt: '2025-01-01',
+    };
+    prisma.tenant.findUnique.mockResolvedValue({
+      settings: { blogConfig: {}, domainVerification },
+    });
+    prisma.tenant.update.mockResolvedValue({});
+
+    const result = await service.updateSettings('t-1', {
+      domainVerification: { ...domainVerification, status: 'verified', sslStatus: 'active' },
+    });
+
+    expect(result.domainVerification).toEqual(domainVerification);
+    expect(prisma.tenant.update).toHaveBeenCalledWith({
+      where: { id: 't-1' },
+      data: { settings: expect.objectContaining({ domainVerification }) },
+    });
+  });
+
+  it('BS-TS-18: update — customDomain 을 다른 테넌트가 사용 중이면 Error, 자기 자신은 제외하고 확인한다', async () => {
+    prisma.tenant.findFirst.mockResolvedValue({ id: 't-2', customDomain: 'blog.custom.com' });
+
+    await expect(service.update('t-1', { customDomain: 'blog.custom.com' }))
+      .rejects.toThrow('이미 다른 테넌트에서 사용 중인 도메인');
+    expect(prisma.tenant.findFirst).toHaveBeenCalledWith({
+      where: { customDomain: 'blog.custom.com', NOT: { id: 't-1' } },
+    });
+    expect(prisma.tenant.update).not.toHaveBeenCalled();
   });
 });

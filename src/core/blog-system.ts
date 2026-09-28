@@ -187,6 +187,7 @@ export function createBlogSystem(config: BlogSystemConfig): BlogSystem {
       createScopedService: createScopedBlogService,
       tenantResolver,
       baseDomain,
+      tenantUserService,
     },
   );
 

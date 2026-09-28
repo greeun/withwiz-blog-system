@@ -56,8 +56,8 @@ export const system = createBlogSystem({
     uploadEndpoint: '/api/upload',
     pageSize: 12,
     categories: {
-      notice: { key: 'notice', label: '공지', bgColor: '#121212', textColor: '#FEFEFE' },
-      performance: { key: 'performance', label: '공연', bgColor: '#D4AF37', textColor: '#121212' },
+      notice: { key: 'notice', label: '공지', bgColor: '#1F2937', textColor: '#FFFFFF' },
+      event: { key: 'event', label: '이벤트', bgColor: '#2563EB', textColor: '#FFFFFF' },
     },
   },
   storage,

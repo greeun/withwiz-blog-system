@@ -23,7 +23,8 @@ export interface BillingRoutes extends RouteHandlers {
  *
  * - `plans.GET`, `webhook.POST`: 공개 경로 (웹훅은 Stripe 서명으로 검증)
  * - `checkout`, `portal`, `subscription`, `usage`: 요청의 `tenantId` 테넌트에 ADMIN 이상 역할로
- *   소속된 사용자만 호출할 수 있다. `tenantUserService` 를 전달하지 않으면 403 으로 거부한다.
+ *   소속된 사용자만 호출할 수 있다. 인가를 입력 검증보다 먼저 확인하며, `tenantId` 가 없거나
+ *   `tenantUserService` 를 전달하지 않으면 403 으로 거부한다.
  * - `adminPlans`: 요금제 관리는 플랫폼 수준 작업이므로 SUPER_ADMIN 만 호출할 수 있다.
  */
 export function createBillingRoutes(
@@ -47,7 +48,10 @@ export function createBillingRoutes(
         const { tenantId, planId, successUrl, cancelUrl } =
           await context.request.json();
 
-        if (!tenantId || !planId || !successUrl || !cancelUrl) {
+        const access = await requireTenantRole(context, tenantUserService, tenantId);
+        if (!access.ok) return access.response;
+
+        if (!planId || !successUrl || !cancelUrl) {
           return NextResponse.json(
             {
               success: false,
@@ -57,12 +61,9 @@ export function createBillingRoutes(
           );
         }
 
-        const access = await requireTenantRole(context, tenantUserService, tenantId);
-        if (!access.ok) return access.response;
-
         try {
           const url = await billingService.createCheckoutSession(
-            tenantId,
+            access.tenantId,
             planId,
             successUrl,
             cancelUrl,
@@ -92,7 +93,10 @@ export function createBillingRoutes(
 
         const { tenantId, returnUrl } = await context.request.json();
 
-        if (!tenantId || !returnUrl) {
+        const access = await requireTenantRole(context, tenantUserService, tenantId);
+        if (!access.ok) return access.response;
+
+        if (!returnUrl) {
           return NextResponse.json(
             {
               success: false,
@@ -102,12 +106,9 @@ export function createBillingRoutes(
           );
         }
 
-        const access = await requireTenantRole(context, tenantUserService, tenantId);
-        if (!access.ok) return access.response;
-
         try {
           const url = await billingService.createPortalSession(
-            tenantId,
+            access.tenantId,
             returnUrl,
           );
           return NextResponse.json({ success: true, data: { url } });
@@ -136,20 +137,10 @@ export function createBillingRoutes(
         const url = new URL(context.request.url);
         const tenantId = url.searchParams.get('tenantId');
 
-        if (!tenantId) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: { message: 'tenantId는 필수입니다.' },
-            },
-            { status: 400 },
-          );
-        }
-
         const access = await requireTenantRole(context, tenantUserService, tenantId);
         if (!access.ok) return access.response;
 
-        const subscription = await billingService.getSubscription(tenantId);
+        const subscription = await billingService.getSubscription(access.tenantId);
         return NextResponse.json({ success: true, data: subscription });
       }),
     },
@@ -162,23 +153,13 @@ export function createBillingRoutes(
         const url = new URL(context.request.url);
         const tenantId = url.searchParams.get('tenantId');
 
-        if (!tenantId) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: { message: 'tenantId는 필수입니다.' },
-            },
-            { status: 400 },
-          );
-        }
-
         const access = await requireTenantRole(context, tenantUserService, tenantId);
         if (!access.ok) return access.response;
 
         const periodParam = url.searchParams.get('period');
         const period = periodParam ? new Date(periodParam) : undefined;
 
-        const usage = await billingService.getUsage(tenantId, period);
+        const usage = await billingService.getUsage(access.tenantId, period);
         return NextResponse.json({ success: true, data: usage });
       }),
     },

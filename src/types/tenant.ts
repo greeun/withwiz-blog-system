@@ -94,6 +94,11 @@ export interface DomainInfo {
 
 /** 테넌트 settings JSON에 저장되는 도메인 인증 데이터 */
 export interface TenantDomainVerificationData {
+  /**
+   * 인증 대상 도메인. 인증 전에는 `tenant.customDomain` 에 설정하지 않고 여기에만 둔다.
+   * 이 필드가 없는 이전 데이터는 `tenant.customDomain` 을 인증 대상으로 본다.
+   */
+  domain?: string;
   token: string;
   status: DomainVerificationStatus;
   sslStatus: DomainSslStatus;

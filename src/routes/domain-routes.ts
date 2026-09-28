@@ -29,7 +29,8 @@ async function getRouteParam(props: unknown, key: string): Promise<string> {
  * 커스텀 도메인 관리 라우트.
  *
  * - `add`, `verify`, `status`, `remove`: 대상 테넌트(경로 파라미터 `id` 또는 요청의 `tenantId`)에
- *   ADMIN 이상 역할로 소속된 사용자만 호출할 수 있다. `tenantUserService` 를 전달하지 않으면 403 으로 거부한다.
+ *   ADMIN 이상 역할로 소속된 사용자만 호출할 수 있다. 인가를 입력 검증보다 먼저 확인하며,
+ *   대상 테넌트가 없거나 `tenantUserService` 를 전달하지 않으면 403 으로 거부한다.
  * - `list`: 모든 테넌트의 도메인을 조회하므로 SUPER_ADMIN 만 호출할 수 있다.
  */
 export function createDomainRoutes(
@@ -49,15 +50,9 @@ export function createDomainRoutes(
         const body = await context.request.json();
         const { domain } = body;
 
-        if (!tenantId && !body.tenantId) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: { message: 'tenantId는 필수입니다.' },
-            },
-            { status: 400 },
-          );
-        }
+        const targetTenantId = tenantId ?? body.tenantId;
+        const access = await requireTenantRole(context, tenantUserService, targetTenantId);
+        if (!access.ok) return access.response;
 
         if (!domain || typeof domain !== 'string') {
           return NextResponse.json(
@@ -80,13 +75,9 @@ export function createDomainRoutes(
           );
         }
 
-        const targetTenantId = tenantId ?? body.tenantId;
-        const access = await requireTenantRole(context, tenantUserService, targetTenantId);
-        if (!access.ok) return access.response;
-
         try {
           const result = await domainService.addCustomDomain(
-            targetTenantId,
+            access.tenantId,
             domain,
           );
 
@@ -123,15 +114,9 @@ export function createDomainRoutes(
         const body = await context.request.json();
         const { domain } = body;
 
-        if (!tenantId && !body.tenantId) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: { message: 'tenantId는 필수입니다.' },
-            },
-            { status: 400 },
-          );
-        }
+        const targetTenantId = tenantId ?? body.tenantId;
+        const access = await requireTenantRole(context, tenantUserService, targetTenantId);
+        if (!access.ok) return access.response;
 
         if (!domain || typeof domain !== 'string') {
           return NextResponse.json(
@@ -143,13 +128,9 @@ export function createDomainRoutes(
           );
         }
 
-        const targetTenantId = tenantId ?? body.tenantId;
-        const access = await requireTenantRole(context, tenantUserService, targetTenantId);
-        if (!access.ok) return access.response;
-
         try {
           const verified = await domainService.verifyDomain(
-            targetTenantId,
+            access.tenantId,
             domain,
           );
 
@@ -188,15 +169,8 @@ export function createDomainRoutes(
         const resolvedTenantId =
           tenantId ?? url.searchParams.get('tenantId');
 
-        if (!resolvedTenantId) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: { message: 'tenantId는 필수입니다.' },
-            },
-            { status: 400 },
-          );
-        }
+        const access = await requireTenantRole(context, tenantUserService, resolvedTenantId);
+        if (!access.ok) return access.response;
 
         if (!domain) {
           return NextResponse.json(
@@ -208,12 +182,9 @@ export function createDomainRoutes(
           );
         }
 
-        const access = await requireTenantRole(context, tenantUserService, resolvedTenantId);
-        if (!access.ok) return access.response;
-
         try {
           const result = await domainService.checkVerification(
-            resolvedTenantId,
+            access.tenantId,
             domain,
           );
 
@@ -250,21 +221,11 @@ export function createDomainRoutes(
           resolvedTenantId = url.searchParams.get('tenantId');
         }
 
-        if (!resolvedTenantId) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: { message: 'tenantId는 필수입니다.' },
-            },
-            { status: 400 },
-          );
-        }
-
         const access = await requireTenantRole(context, tenantUserService, resolvedTenantId);
         if (!access.ok) return access.response;
 
         try {
-          await domainService.removeCustomDomain(resolvedTenantId);
+          await domainService.removeCustomDomain(access.tenantId);
 
           return NextResponse.json({
             success: true,

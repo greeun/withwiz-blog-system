@@ -18,13 +18,19 @@ interface DomainService {
 
 ```
 1. 고객이 도메인 입력: www.customer.com
-2. addCustomDomain() → DB에 pending 상태로 저장 + TXT 레코드 값 생성
+2. addCustomDomain() → settings.domainVerification 에 pending 상태로 저장 + TXT 레코드 값 생성
+   (tenant.customDomain 은 아직 비어 있어 이 도메인으로 테넌트가 해석되지 않는다)
 3. 시스템이 고객에게 TXT 추가 안내 표시
 4. 고객이 DNS 프로바이더에서 TXT 레코드 추가
 5. 시스템이 주기적으로(또는 "다시 확인" 버튼) checkVerification 호출
-6. DNS resolveTxt로 TXT 존재 확인 → verified 상태로 전환
+6. DNS resolveTxt로 TXT 존재 확인 → verified 상태로 전환 + tenant.customDomain 설정
 7. (선택) Vercel API에 도메인 등록 → SSL 자동 프로비저닝
 ```
+
+- 같은 도메인을 여러 테넌트가 인증 대기할 수 있다. TXT 레코드는 도메인 소유자만 추가할 수 있으므로, 먼저 인증한 테넌트가 도메인을 갖고 나머지 테넌트의 인증은 거부된다.
+- 인증한 도메인이 있는 테넌트가 다른 도메인을 추가하면 기존 도메인은 즉시 해제된다(Vercel 연동 시 Vercel 에서도 제거).
+- 인증 상태(`settings.domainVerification`)는 `DomainService` 만 변경한다. `tenantService.updateSettings`(tenant `settings.PUT`)는 요청의 `domainVerification` 을 무시한다.
+- `domain` 필드가 없는 이전 인증 데이터는 `tenant.customDomain` 을 인증 대상으로 본다. 이전 방식으로 저장되어 인증 전에 `customDomain` 이 설정된 테넌트는 도메인을 다시 등록해야 인증 전 상태로 돌아간다.
 
 ## TXT 레코드 형식
 
