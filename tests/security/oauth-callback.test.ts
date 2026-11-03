@@ -140,6 +140,17 @@ describe('AuthService.handleOAuthCallback — 기존 계정 연결', () => {
     expect(result.tokens).toEqual(TOKENS);
   });
 
+  it('BS-OA-03b: 기존 계정에 연결해도 결과의 user 에 비밀번호 해시가 없다', async () => {
+    oauth.getUserInfo.mockResolvedValue({ id: 'g-1', email: VICTIM.email, name: 'Victim', image: null, emailVerified: true });
+    repos.findByEmail.mockResolvedValue({ ...VICTIM, password: 'stored-hash' });
+    const service = createAuthService(createPrisma(), OAUTH_CONFIG);
+
+    const result = await service.handleOAuthCallback('google', 'code');
+
+    expect(result.user).toEqual(VICTIM);
+    expect(result.user).not.toHaveProperty('password');
+  });
+
   it('BS-OA-04: 새 이메일은 인증 여부와 관계없이 새 사용자로 만들고 인증 시각은 확인된 경우에만 기록한다', async () => {
     oauth.getUserInfo.mockResolvedValue({ id: 'g-2', email: 'new@example.com', name: 'New', image: null, emailVerified: false });
     repos.findByEmail.mockResolvedValue(null);

@@ -190,6 +190,18 @@ describe('AuthService', () => {
       expect(result.tokens).toEqual(MOCK_TOKENS);
     });
 
+    it('AS-06b: 저장소가 해시를 붙여 돌려줘도 login 결과의 user 에는 해시가 없다', async () => {
+      mockUserRepoFindByEmail.mockResolvedValue({ ...MOCK_USER, password: 'hashed-pw' });
+      prisma.user.findUnique.mockResolvedValue({ password: 'hashed-pw' });
+      mockVerify.mockResolvedValue(true);
+      mockCreateTokenPair.mockResolvedValue(MOCK_TOKENS);
+
+      const result = await authService.login('test@example.com', 'StrongP@ss1!');
+
+      expect(result.user).toEqual(MOCK_USER);
+      expect(result.user).not.toHaveProperty('password');
+    });
+
     it('AS-07: 존재하지 않는 이메일 → 에러', async () => {
       mockUserRepoFindByEmail.mockResolvedValue(null);
 
