@@ -100,6 +100,15 @@ const noopLogger: Logger = {
   error: () => {},
 };
 
+/**
+ * toolkit 의 `findByEmail` 은 자체 로그인 핸들러를 위해 비밀번호 해시를 사용자 객체에 붙여 돌려준다.
+ * 라우트가 이 객체를 응답으로 내보내므로 서비스 밖으로 나가기 전에 제거한다.
+ */
+function withoutPasswordHash(user: BaseUser): BaseUser {
+  const { password: _passwordHash, ...rest } = user as BaseUser & { password?: unknown };
+  return rest;
+}
+
 export function createAuthService(
   prisma: PrismaClientLike,
   config: AuthServiceConfig,
@@ -174,7 +183,7 @@ export function createAuthService(
 
       await userRepo.updateLastLoginAt(user.id);
       const tokens = await jwtService.createTokenPair({ ...user, role: user.role ?? 'USER' });
-      return { user, tokens };
+      return { user: withoutPasswordHash(user), tokens };
     },
 
     async refreshToken(refreshToken) {
@@ -258,7 +267,7 @@ export function createAuthService(
 
       await userRepo.updateLastLoginAt(user.id);
       const tokens = await jwtService.createTokenPair({ ...user, role: user.role ?? 'USER' });
-      return { user, tokens };
+      return { user: withoutPasswordHash(user), tokens };
     },
 
     async changePassword(userId, oldPassword, newPassword) {
